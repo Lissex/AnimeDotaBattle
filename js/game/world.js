@@ -7,7 +7,7 @@ AA.module('game/world', (function () {
   var POOLS = [
     'units', 'proj', 'parts', 'floats', 'rings', 'tele', 'bolts', 'slashes',
     'auras', 'corpses', 'sparks', 'zones', 'walls', 'cones', 'pillars',
-    'embers', 'timers', 'runes', 'swipes', 'muzzles'
+    'embers', 'timers', 'runes', 'swipes', 'muzzles', 'shocks'
   ];
 
   var W = {
@@ -32,6 +32,7 @@ AA.module('game/world', (function () {
 
     /* --- камера и постобработка --- */
     shakeT: 0, shakeMag: 0, flashT: 0, flashC: '#fff', hitstop: 0,
+    bloomT: 0, bloomC: '#fff',   // короткая вспышка на добивании
 
     /* --- счётчик урона в секунду (полигон) --- */
     dmgWindow: [], dps: 0

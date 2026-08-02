@@ -1,0 +1,134 @@
+/* ============================================================
+   cards — карточные экраны, добавленные последней волной правок:
+     · события и условия забега  (#scr-event)
+     · сборка артефактов в лавке (вкладка СБОРКА)
+     · таблица рекордов          (#scr-leaders)
+   Опирается на токены из base.css.
+   ============================================================ */
+
+/* ==================== СОБЫТИЕ / УСЛОВИЯ ==================== */
+.event-panel{max-height:92vh}
+
+.panel-head.col-head{flex-direction:column;align-items:flex-start;gap:3px}
+.event-sub{color:var(--dim);font-size:12px;letter-spacing:.5px}
+
+.event-cards{
+  display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));
+  gap:10px;padding:14px 16px;overflow-y:auto;touch-action:pan-y;
+}
+
+/* --cc задаётся из JS: цвет карточки берётся у самого предложения.
+   Оттенок наносится псевдоэлементом с прозрачностью, а не смешиванием
+   цветов в CSS — так карточки одинаково выглядят и в старых браузерах. */
+.event-card{
+  --cc:#ff7a2f;
+  position:relative;cursor:pointer;overflow:hidden;
+  padding:14px 13px 15px;border-radius:14px;
+  background:var(--bg2);
+  border:1px solid var(--line);
+  box-shadow:0 6px 20px rgba(0,0,0,.35);
+  transition:transform .12s,box-shadow .18s,border-color .18s;
+  animation:ec-in .32s backwards cubic-bezier(.2,.9,.3,1.2);
+}
+@keyframes ec-in{from{opacity:0;transform:translateY(14px) scale(.96)}}
+
+.event-card::after{
+  /* цветное свечение сверху — «карточка ловит свет» */
+  content:"";position:absolute;inset:0;pointer-events:none;opacity:.2;
+  background:radial-gradient(130% 95% at 50% 0%, var(--cc) 0%, transparent 62%);
+}
+.event-card::before{
+  content:"";position:absolute;inset:0 0 auto 0;height:1px;z-index:1;
+  background:linear-gradient(90deg,transparent,var(--cc),transparent);
+  opacity:.85;
+}
+.event-card>*{position:relative;z-index:2}
+
+.event-card:hover{transform:translateY(-3px);border-color:var(--cc);box-shadow:0 10px 26px rgba(0,0,0,.5)}
+.event-card:hover::after{opacity:.32}
+.event-card:active{transform:scale(.98)}
+
+.ec-icon{font-size:27px;line-height:1;margin-bottom:9px}
+.event-card b{display:block;font-size:14px;font-weight:900;letter-spacing:.6px;color:var(--cc)}
+.event-card p{margin-top:5px;font-size:12px;line-height:1.42;color:var(--dim)}
+
+.ec-tag{
+  position:absolute;top:10px;right:10px;
+  padding:2px 7px;border-radius:6px;font-size:9.5px;font-weight:900;letter-spacing:1px;
+  background:rgba(255,77,94,.16);border:1px solid rgba(255,77,94,.5);color:var(--red);
+}
+.event-card.risky{border-style:dashed}
+
+.event-summary{
+  display:flex;flex-wrap:wrap;align-items:center;gap:6px;
+  padding:11px 16px 14px;border-top:1px solid var(--line);
+}
+.es-label{font-size:11px;font-weight:800;letter-spacing:1px;color:var(--dim)}
+.es-item{
+  padding:3px 9px;border-radius:20px;font-size:11px;font-weight:700;
+  background:var(--panel2);border:1px solid var(--line);color:var(--txt);
+}
+
+/* ==================== СБОРКА АРТЕФАКТОВ ==================== */
+.shop-modes{display:flex;gap:6px;margin-bottom:9px}
+.shop-mode{
+  position:relative;flex:1;padding:8px 10px;border-radius:10px;
+  background:var(--bg2);border:1px solid var(--line);
+  font-size:11.5px;font-weight:900;letter-spacing:1px;color:var(--dim);
+  transition:background .15s,color .15s,border-color .15s;
+}
+.shop-mode.on{background:var(--panel2);border-color:var(--acc);color:var(--txt)}
+
+.craft-badge{
+  display:inline-flex;align-items:center;justify-content:center;
+  min-width:16px;height:16px;margin-left:6px;padding:0 4px;
+  border-radius:9px;background:#ff5ad8;color:#1a0a17;
+  font-size:10px;font-weight:900;font-style:normal;
+  box-shadow:0 0 10px rgba(255,90,216,.6);
+  animation:cb-pulse 1.6s infinite ease-in-out;
+}
+@keyframes cb-pulse{50%{transform:scale(1.14)}}
+
+.item.craft.can{box-shadow:0 0 0 1px rgba(255,90,216,.25),0 6px 20px rgba(255,90,216,.16)}
+.item.craft.cant{opacity:.6;cursor:default}
+
+.craft-parts{display:flex;align-items:center;flex-wrap:wrap;gap:4px;margin-top:8px}
+.craft-plus{color:var(--dim);font-weight:900;font-size:12px}
+.craft-part{
+  display:inline-flex;align-items:center;gap:4px;
+  padding:3px 7px 3px 4px;border-radius:8px;
+  background:var(--bg);border:1px solid var(--line);
+  font-size:10.5px;color:var(--dim);opacity:.55;
+}
+.craft-part.has{opacity:1;color:var(--txt);border-color:rgba(255,90,216,.45)}
+.craft-part canvas{display:block;border-radius:4px}
+
+/* ==================== ТАБЛИЦА РЕКОРДОВ ==================== */
+.lb-body{
+  padding:12px 16px 4px;overflow-y:auto;touch-action:pan-y;
+  display:flex;flex-direction:column;gap:5px;min-height:120px;
+}
+.lb-row{
+  display:flex;align-items:center;gap:9px;
+  padding:7px 10px;border-radius:10px;
+  background:var(--bg2);border:1px solid var(--line);
+}
+.lb-row.self{border-color:var(--acc);background:var(--panel2)}
+
+.lb-rank{
+  flex:none;width:26px;text-align:center;
+  font-size:12px;font-weight:900;color:var(--dim);
+}
+.lb-rank.top1{color:#ffd34a}
+.lb-rank.top2{color:#d8dee8}
+.lb-rank.top3{color:#d1955a}
+
+.lb-avatar{flex:none;width:26px;height:26px;border-radius:50%;object-fit:cover;background:var(--panel2)}
+.lb-name{flex:1;min-width:0;font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.lb-score{flex:none;font-size:12px;font-weight:800;color:var(--gold)}
+
+.lb-empty{padding:26px 10px;text-align:center;color:var(--dim)}
+.lb-empty b{display:block;font-size:26px;font-weight:900;color:var(--gold)}
+.lb-empty p{margin-top:4px;font-size:12px}
+
+.lb-note{padding:2px 16px 12px;font-size:11.5px;line-height:1.4;color:var(--dim);text-align:center}

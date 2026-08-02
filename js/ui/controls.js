@@ -200,7 +200,7 @@ AA.module('ui/controls', (function () {
     d.$('btn-again').onclick = function () {
       s.closeAll();
       AA.Platform.sdk.hideBanner();
-      s.startRun(false);
+      s.beginRun();
     };
 
     d.$('btn-revive').onclick = function () {

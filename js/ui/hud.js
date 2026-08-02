@@ -138,7 +138,7 @@ AA.module('ui/hud', (function () {
   function onWaveClear(wave) {
     var w = W(), h = w.hero, A = AA.Content.attributes;
 
-    w.gold += A.goldPerWave(wave);
+    w.gold += AA.Game.run.gold(A.goldPerWave(wave));
 
     // уровень даётся прямо за волну: обычная — один, боссовая — два
     var gained = A.levelsForWave(wave);
@@ -157,8 +157,10 @@ AA.module('ui/hud', (function () {
     if (w.auto) { AA.UI.skilltree.autoAssign(true); AA.UI.shop.autoBuy(true); }
 
     // босс повержен — ставим главу истории в очередь
-    var A = AA.Content.attributes;
     if (A.isBossWave(wave)) AA.UI.comic.queue(A.bossIndex(wave));
+
+    // событие после каждой N-й волны, а без лавки — после каждой
+    eventPending = AA.Game.run.state.noShop || AA.Game.run.isEventWave(wave);
 
     // п.4.4: полноэкранная реклама только в логической паузе
     if (wave >= 2 && wave % 3 === 0) AA.Platform.sdk.interstitial(afterWave);
@@ -166,12 +168,26 @@ AA.module('ui/hud', (function () {
   }
 
   /* ---------------- очередь окон между волнами ----------------
-     Порядок: талант → глава истории → лавка.
+     Порядок: талант → глава истории → событие → лавка.
      Каждое окно получает продолжение и обязано его вызвать при
      закрытии — иначе бой останется остановленным и игра встанет. */
+  var eventPending = false;
+
   function afterWave() {
     if (AA.UI.talents.checkPending(afterWave)) return;
     if (AA.UI.comic.flush(afterWave)) return;
+
+    if (eventPending) {
+      eventPending = false;
+      if (AA.UI.events.offerWave(afterWave)) return;
+    }
+
+    // при закрытой лавке события заменяют её целиком
+    if (AA.Game.run.state.noShop) {
+      AA.Game.waves.nextWave();
+      refresh(true);
+      return;
+    }
     AA.UI.shop.open();
   }
 

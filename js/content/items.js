@@ -7,8 +7,75 @@ AA.module('content/items', (function () {
     1: { name: 'Обычный', c: '#8b97bd' },
     2: { name: 'Редкий', c: '#4aa8ff' },
     3: { name: 'Эпический', c: '#b07dff' },
-    4: { name: 'Легендарный', c: '#ffc043' }
+    4: { name: 'Легендарный', c: '#ffc043' },
+    5: { name: 'Артефакт', c: '#ff5ad8' }
   };
+
+  /* ============================================================
+     АРТЕФАКТЫ И РЕЦЕПТЫ
+
+     Два предмета соединяются в один и освобождают слот. Это
+     единственный способ выйти за потолок сборки в поздних волнах:
+     шесть слотов заполняются к двадцатой волне, и без сборки
+     решений в лавке больше не остаётся.
+     ============================================================ */
+  var ARTIFACTS = [
+    {
+      id: 'a_reaper', name: 'Жатва Бесконечности', cost: 2400, t: 5,
+      s: { atk: 120, lifesteal: 30, agi: 24, crit: 20, critMult: 2.4 },
+      d: '+120 к урону, +30% вампиризма, +24 ловкости, +20% крита (x2.4)',
+      parts: ['scythe', 'fury']
+    },
+    {
+      id: 'a_bastion', name: 'Бастион Мира', cost: 2600, t: 5,
+      s: { armor: 40, mr: .42, str: 60, hpReg: 26 },
+      d: '+40 брони, +42% сопр. магии, +60 силы, +26 регена',
+      parts: ['bulwark', 'aegis']
+    },
+    {
+      id: 'a_omniscience', name: 'Всеведение', cost: 2800, t: 5,
+      s: { sp: 230, int: 52, cdr: 34, mpReg: 8 },
+      d: '+230 силы заклинаний, +52 интеллекта, −34% перезарядки',
+      parts: ['grimoire', 'crown']
+    },
+    {
+      id: 'a_titanpulse', name: 'Пульс Титана', cost: 2500, t: 5,
+      s: { str: 80, hpReg: 30, armor: 14, atk: 40 },
+      d: '+80 силы, +30 регена, +14 брони, +40 к урону',
+      parts: ['heart', 'maul']
+    },
+    {
+      id: 'a_tempest', name: 'Поступь Бури', cost: 2200, t: 5,
+      s: { ms: 150, asPct: 70, agi: 30, crit: 14 },
+      d: '+150 скорости, +70% скорости атаки, +30 ловкости, +14% крита',
+      parts: ['travel', 'gauntlet']
+    },
+    {
+      id: 'a_eclipse', name: 'Затмение', cost: 2300, t: 5,
+      s: { mr: .48, int: 34, sp: 90, ms: 60 },
+      d: '+48% сопр. магии, +34 интеллекта, +90 силы заклинаний, +60 скорости',
+      parts: ['veil', 'cloak']
+    },
+    {
+      id: 'a_bloodmoon', name: 'Кровавая Луна', cost: 2100, t: 5,
+      s: { lifesteal: 46, atk: 70, str: 26 },
+      d: '+46% вампиризма, +70 к урону, +26 силы',
+      parts: ['fang', 'hammer']
+    },
+    {
+      id: 'a_falconer', name: 'Взгляд Сокола', cost: 2000, t: 5,
+      s: { range: 320, atk: 52, crit: 26, critMult: 2.3 },
+      d: '+320 дальности, +52 к урону, +26% крита (x2.3)',
+      parts: ['lantern', 'talons']
+    },
+    {
+      id: 'a_aghanim', name: 'Скипетр Аганима', cost: 3200, t: 5, shard: true,
+      s: { int: 46, sp: 120, cdr: 24, hp: 500 },
+      d: 'Усиливает ключевое умение. +46 интеллекта, +120 силы заклинаний, ' +
+        '−24% перезарядки, +500 здоровья',
+      parts: ['shard', 'chalice']
+    }
+  ];
 
   var LIST = [
     /* --- обычные --- */
@@ -77,5 +144,42 @@ AA.module('content/items', (function () {
     return v;
   }
 
-  return { LIST: LIST, RARITY: RARITY, score: score };
+  // артефакты живут в общем списке, но не продаются напрямую —
+  // их только собирают, поэтому в витрине они скрыты
+  ARTIFACTS.forEach(function (a) { a.craftOnly = true; LIST.push(a); });
+
+  var byId = {};
+  LIST.forEach(function (it) { byId[it.id] = it; });
+
+  /** Какие артефакты можно собрать из того, что лежит в инвентаре. */
+  function craftable(items) {
+    var have = {};
+    items.forEach(function (it) { have[it.id] = true; });
+
+    return ARTIFACTS.filter(function (a) {
+      return a.parts.every(function (p) { return have[p]; });
+    });
+  }
+
+  /** Все рецепты с пометкой, каких частей не хватает. */
+  function recipes(items) {
+    var have = {};
+    items.forEach(function (it) { have[it.id] = true; });
+
+    return ARTIFACTS.map(function (a) {
+      return {
+        art: a,
+        parts: a.parts.map(function (p) {
+          return { item: byId[p], owned: !!have[p] };
+        }),
+        ready: a.parts.every(function (p) { return have[p]; })
+      };
+    });
+  }
+
+  return {
+    LIST: LIST, ARTIFACTS: ARTIFACTS, RARITY: RARITY,
+    score: score, craftable: craftable, recipes: recipes,
+    get: function (id) { return byId[id]; }
+  };
 })());

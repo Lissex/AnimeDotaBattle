@@ -87,7 +87,7 @@ AA.module('ui/menu', (function () {
         S.open('howto');
         return;
       }
-      S.startRun(false);
+      S.beginRun();
     };
 
     d.$('btn-training').onclick = function () { S.startRun(true); };
@@ -107,7 +107,7 @@ AA.module('ui/menu', (function () {
         S.close(b.dataset.close);
         if (b.dataset.close === 'howto' && S.run.pendingStart) {
           S.run.pendingStart = false;
-          S.startRun(false);
+          S.beginRun();
         }
       };
     });

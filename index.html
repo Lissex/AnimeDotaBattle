@@ -10,6 +10,7 @@
 <link rel="stylesheet" href="css/screens.css">
 <link rel="stylesheet" href="css/battle.css">
 <link rel="stylesheet" href="css/panels.css">
+<link rel="stylesheet" href="css/cards.css">
 </head>
 <body>
 
@@ -40,6 +41,7 @@
         <button class="btn btn-main" id="btn-play">В БОЙ</button>
         <button class="btn" id="btn-heroes">ГЕРОИ</button>
         <button class="btn" id="btn-training">УЧЕБНЫЙ ПОЛИГОН</button>
+        <button class="btn" id="btn-leaders">РЕКОРДЫ</button>
         <button class="btn" id="btn-howto">КАК ИГРАТЬ</button>
       </div>
     </div>
@@ -152,7 +154,11 @@
           <div class="sell-panel" id="sell-panel" style="display:none"></div>
         </div>
         <div class="stat-strip" id="stat-strip"></div>
-        <div class="shop-tabs">
+        <div class="shop-modes">
+          <button class="shop-mode on" data-mode="shop">ПОКУПКА</button>
+          <button class="shop-mode" data-mode="craft">СБОРКА<i class="craft-badge" id="craft-badge" style="display:none">0</i></button>
+        </div>
+        <div class="shop-tabs" id="shop-tabs">
           <button class="shop-tab on" data-t="0">ВСЕ</button>
           <button class="shop-tab" data-t="1">ОБЫЧНЫЕ</button>
           <button class="shop-tab" data-t="2">РЕДКИЕ</button>
@@ -200,12 +206,37 @@
     </div>
   </div>
 
+  <!-- ============ СОБЫТИЕ / УСЛОВИЯ ЗАБЕГА ============ -->
+  <div id="scr-event" class="screen overlay">
+    <div class="panel panel-wide event-panel">
+      <div class="panel-head col-head">
+        <h2 id="event-title">СОБЫТИЕ</h2>
+        <p class="event-sub" id="event-sub"></p>
+      </div>
+      <div class="event-cards" id="event-cards"></div>
+      <div class="event-summary" id="event-summary" style="display:none"></div>
+    </div>
+  </div>
+
+  <!-- ======================= РЕКОРДЫ ======================= -->
+  <div id="scr-leaders" class="screen overlay">
+    <div class="panel">
+      <div class="panel-head"><h2>ТАБЛИЦА РЕКОРДОВ</h2></div>
+      <div class="lb-body" id="lb-list"></div>
+      <p class="lb-note" id="lb-note"></p>
+      <div class="panel-foot">
+        <button class="btn btn-main" id="btn-leaders-close">ЗАКРЫТЬ</button>
+      </div>
+    </div>
+  </div>
+
   <!-- ======================= НАСТРОЙКИ ======================= -->
   <div id="scr-settings" class="screen overlay">
     <div class="panel panel-sm">
       <div class="panel-head"><h2>НАСТРОЙКИ</h2></div>
       <div class="settings-body">
         <label class="switch"><input type="checkbox" id="set-sound" checked><span></span>Звук</label>
+        <label class="switch"><input type="checkbox" id="set-music" checked><span></span>Музыка</label>
         <label class="switch"><input type="checkbox" id="set-shake" checked><span></span>Тряска экрана</label>
         <label class="switch"><input type="checkbox" id="set-numbers" checked><span></span>Числа урона</label>
 
@@ -280,10 +311,14 @@
 <script src="js/platform/i18n.js"></script>
 <script src="js/platform/storage.js"></script>
 <script src="js/platform/sdk.js"></script>
+<script src="js/platform/leaderboard.js"></script>
 
 <!-- content -->
 <script src="js/content/attributes.js"></script>
 <script src="js/content/items.js"></script>
+<script src="js/content/modifiers.js"></script>
+<script src="js/content/offers.js"></script>
+<script src="js/content/elites.js"></script>
 <script src="js/content/enemies.js"></script>
 <script src="js/content/maps.js"></script>
 <script src="js/content/runes.js"></script>
@@ -302,6 +337,7 @@
 
 <!-- game -->
 <script src="js/game/world.js"></script>
+<script src="js/game/run.js"></script>
 <script src="js/game/camera.js"></script>
 <script src="js/game/talents.js"></script>
 <script src="js/game/stats.js"></script>
@@ -346,6 +382,8 @@
 <script src="js/ui/skilltree.js"></script>
 <script src="js/ui/talents.js"></script>
 <script src="js/ui/comic.js"></script>
+<script src="js/ui/events.js"></script>
+<script src="js/ui/leaderboard.js"></script>
 <script src="js/ui/training.js"></script>
 <script src="js/ui/controls.js"></script>
 

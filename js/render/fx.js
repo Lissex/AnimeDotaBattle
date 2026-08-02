@@ -29,30 +29,7 @@ AA.module('render/fx', (function () {
       ctx.beginPath(); ctx.arc(z.x, z.y, z.r, 0, 6.2832); ctx.stroke();
       ctx.setLineDash([]);
 
-      if (z.style === 'hole') {
-        // чёрная дыра: тёмное ядро и закрученные нити
-        ctx.globalAlpha = .9 * fade;
-        var core = ctx.createRadialGradient(z.x, z.y, 2, z.x, z.y, z.r * .45);
-        core.addColorStop(0, '#000000');
-        core.addColorStop(.7, 'rgba(10,6,24,.85)');
-        core.addColorStop(1, 'rgba(0,0,0,0)');
-        ctx.fillStyle = core;
-        ctx.beginPath(); ctx.arc(z.x, z.y, z.r * .45, 0, 6.2832); ctx.fill();
-
-        ctx.strokeStyle = z.c; ctx.lineWidth = 2;
-        ctx.globalAlpha = .7 * fade;
-        for (s = 0; s < 5; s++) {
-          ctx.beginPath();
-          for (var q = 0; q <= 18; q++) {
-            var tt = q / 18;
-            var ang = s * 1.256 + w.time * 2.4 + tt * 3.4;
-            var rad = z.r * (1 - tt * .92);
-            var px = z.x + Math.cos(ang) * rad, py = z.y + Math.sin(ang) * rad;
-            if (q === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
-          }
-          ctx.stroke();
-        }
-      }
+      if (z.style === 'hole') { blackHole(ctx, z, w, fade); }
 
       if (z.style === 'thorn') {
         ctx.globalAlpha = .8 * fade; ctx.lineWidth = 2;
@@ -147,6 +124,82 @@ AA.module('render/fx', (function () {
     }
   }
 
+  /* ---------------- чёрная дыра ----------------
+     Слои снизу вверх: искажение вокруг, аккреционный диск под
+     наклоном, чёрное ядро с резкой кромкой горизонта событий,
+     втягивающиеся по спирали осколки и вспышка на старте. */
+  function blackHole(ctx, z, w, fade) {
+    var m = M();
+    var t = w.time;
+    var core = z.r * .34;                 // радиус самого ядра
+    var open = Math.min(1, z.t / .35);    // раскрытие в первые мгновения
+
+    ctx.save();
+    ctx.translate(z.x, z.y);
+    ctx.scale(open, open);
+    ctx.globalAlpha = fade;
+
+    /* 1. искажение пространства вокруг */
+    var halo = ctx.createRadialGradient(0, 0, core, 0, 0, z.r * 1.05);
+    halo.addColorStop(0, 'rgba(20,10,40,.55)');
+    halo.addColorStop(.55, m.rgba(z.c, .22));
+    halo.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = halo;
+    ctx.beginPath(); ctx.arc(0, 0, z.r * 1.05, 0, 6.2832); ctx.fill();
+
+    /* 2. аккреционный диск: два наклонённых кольца в противофазе */
+    ctx.globalCompositeOperation = 'lighter';
+    for (var d = 0; d < 2; d++) {
+      ctx.save();
+      ctx.rotate(t * (d ? -.5 : .8) + d * .9);
+      ctx.globalAlpha = fade * (d ? .35 : .55);
+      ctx.strokeStyle = d ? '#c8a0ff' : z.c;
+      ctx.lineWidth = z.r * (d ? .07 : .11);
+      ctx.beginPath();
+      ctx.ellipse(0, 0, z.r * (.78 - d * .12), z.r * (.26 - d * .05), 0, 0, 6.2832);
+      ctx.stroke();
+      ctx.restore();
+    }
+    ctx.globalCompositeOperation = 'source-over';
+
+    /* 3. втягивающиеся осколки: спираль внутрь */
+    ctx.globalAlpha = fade * .8;
+    ctx.strokeStyle = '#d8c0ff';
+    ctx.lineWidth = 1.6;
+    ctx.lineCap = 'round';
+    for (var i = 0; i < 9; i++) {
+      // каждый осколок живёт свой цикл падения
+      var phase = (t * .7 + i / 9) % 1;
+      var rad = core + (z.r - core) * (1 - phase);
+      var ang = i * .698 + t * 2.2 + phase * 5;
+      var len = 10 + (1 - phase) * 12;
+      ctx.globalAlpha = fade * (1 - phase) * .85;
+      ctx.beginPath();
+      ctx.moveTo(Math.cos(ang) * rad, Math.sin(ang) * rad * .62);
+      ctx.lineTo(Math.cos(ang - .18) * (rad - len), Math.sin(ang - .18) * (rad - len) * .62);
+      ctx.stroke();
+    }
+
+    /* 4. ядро с резкой кромкой */
+    ctx.globalAlpha = fade;
+    var hole = ctx.createRadialGradient(0, 0, core * .2, 0, 0, core);
+    hole.addColorStop(0, '#000000');
+    hole.addColorStop(.82, '#000000');
+    hole.addColorStop(1, 'rgba(0,0,0,.2)');
+    ctx.fillStyle = hole;
+    ctx.beginPath(); ctx.arc(0, 0, core, 0, 6.2832); ctx.fill();
+
+    // горизонт событий — тонкое яркое кольцо
+    ctx.globalCompositeOperation = 'lighter';
+    ctx.strokeStyle = '#e0c8ff';
+    ctx.lineWidth = 2;
+    ctx.globalAlpha = fade * (.7 + Math.sin(t * 6) * .25);
+    ctx.beginPath(); ctx.arc(0, 0, core * 1.04, 0, 6.2832); ctx.stroke();
+    ctx.globalCompositeOperation = 'source-over';
+
+    ctx.restore();
+  }
+
   function auras() {
     var ctx = C(), w = W();
     for (var i = 0; i < w.auras.length; i++) {
@@ -205,6 +258,33 @@ AA.module('render/fx', (function () {
       ctx.beginPath(); ctx.arc(r.x, r.y, rad, 0, 6.2832); ctx.stroke();
       ctx.shadowBlur = 0; ctx.globalAlpha = 1;
     }
+  }
+
+  /** Ударная волна добивания: раскрывающийся диск света + тонкий обод.
+      Рисуется в режиме lighter, поэтому читается на любом фоне. */
+  function shocks() {
+    var ctx = C(), w = W();
+    if (!w.shocks.length) return;
+    ctx.save();
+    ctx.globalCompositeOperation = 'lighter';
+    for (var i = 0; i < w.shocks.length; i++) {
+      var s = w.shocks[i], k = s.t / s.life;
+      var ease = 1 - Math.pow(1 - k, 3);
+      var rad = s.max * ease;
+      var fade = Math.pow(1 - k, 1.6);
+
+      var g = ctx.createRadialGradient(s.x, s.y, rad * .55, s.x, s.y, rad);
+      g.addColorStop(0, 'rgba(0,0,0,0)');
+      g.addColorStop(.75, AA.Core.math.rgba(s.c, .30 * fade));
+      g.addColorStop(1, 'rgba(0,0,0,0)');
+      ctx.fillStyle = g;
+      ctx.beginPath(); ctx.arc(s.x, s.y, rad, 0, 6.2832); ctx.fill();
+
+      ctx.strokeStyle = AA.Core.math.rgba('#ffffff', .5 * fade);
+      ctx.lineWidth = 2.2 * fade + .4;
+      ctx.beginPath(); ctx.arc(s.x, s.y, rad, 0, 6.2832); ctx.stroke();
+    }
+    ctx.restore();
   }
 
   function cones() {
@@ -542,7 +622,7 @@ AA.module('render/fx', (function () {
 
   return {
     zones: zones, runes: runes, auras: auras, corpses: corpses, telegraphs: telegraphs,
-    rings: rings, cones: cones, lights: lights, weather: weather,
+    rings: rings, shocks: shocks, cones: cones, lights: lights, weather: weather,
     bolts: bolts, pillars: pillars, slashes: slashes, swipes: swipes, muzzles: muzzles,
     projectiles: projectiles, particles: particles, numbers: numbers,
     resetWeather: function () { flakes = []; flakeMode = null; }

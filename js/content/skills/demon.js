@@ -71,30 +71,41 @@
         ['slow', 'freeze', 'root', 'venom', 'ignite', 'hex', 'chill', 'acid', 'plague']
           .forEach(function (id) { a.removeBuff(u, id); });
 
-        var cap = self.maxCount + (a.talent(u, 'dm_extra_illusion') ? 1 : 0);
-        var pct = self.dmg[l] / 100 + passiveBonus(u, a);
+        // сколько копий держим: талант поднимает лимит до трёх
+        var count = self.maxCount + (a.talent(u, 'dm_extra_illusion') ? 1 : 0);
 
-        for (var i = 0; i < 2; i++) {
-          while (F.countIllusions(u) >= cap) F.dropOldestIllusion();
+        // повторное применение заменяет старые копии, а не мешается с ними —
+        // раньше цикл всегда делал ровно две, и лимит в три не работал
+        var guard = 0;
+        while (F.countIllusions(u) > 0 && guard++ < 12) F.dropOldestIllusion();
+
+        var pct = self.dmg[l] / 100 + passiveBonus(u, a);
+        var tough = a.talent(u, 'dm_illu_dmg');           // «Живые копии»
+        var active = a.hasBuff(u, 'metamorph');
+
+        for (var i = 0; i < count; i++) {
           var c = F.illusion(u, {
-            dmgPct: pct, takenMul: 3, dur: self.dur, color: '#6a8ae8'
+            dmgPct: pct, takenMul: tough ? 2 : 3,
+            dur: self.dur, color: '#6a8ae8'
           });
           if (!c) break;
-          c.x = u.x + Math.cos(i * 3.14) * 60;
-          c.y = u.y + Math.sin(i * 3.14) * 60;
+
+          var ang = i / count * 6.2832;
+          c.x = u.x + Math.cos(ang) * 62;
+          c.y = u.y + Math.sin(ang) * 62;
           AA.Game.world.confine(c);
 
           // копия рождается уже в той форме, в какой сейчас оригинал
-          var active = a.hasBuff(u, 'metamorph');
           if (active) {
             a.buff(c, {
               id: 'metamorph', dur: active.t, atk: active.atk, range: active.range,
               ms: 30, color: '#d84a2a', glow: '#d84a2a', morph: true
             });
             c.morph = true;
-            AA.Game.stats.recalc(c);
           }
+          AA.Game.stats.recalc(c);
         }
+
         a.ring(u.x, u.y, 120, '#6a8ae8');
         return true;
       }

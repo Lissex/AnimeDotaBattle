@@ -77,6 +77,7 @@ AA.module('game/loop', (function () {
       if (u.team === 1) {
         AA.Game.ai.enemy(u, dt);
         if (u.isBoss && !B.isStunned(u)) AA.Game.ai.bossAbility(u, dt);
+        if (u.elite && u.elite.tick && !B.isStunned(u)) u.elite.tick(u, dt);
         if (u.dead) continue;
       } else if (u.isIllusion || u.isEidolon) {
         AA.Game.ai.illusion(u, dt);
@@ -182,6 +183,9 @@ AA.module('game/loop', (function () {
 
     AA.Game.terrain.build(training ? 'training' : hero.defId);
     AA.Render.ground.rebuild();
+    AA.Core.audio.setMood(w.map);
+    AA.Core.audio.setTension(0);
+    AA.Core.audio.startMusic();
 
     var c = AA.Game.world.center();
     w.hero = hero;

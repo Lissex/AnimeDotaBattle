@@ -194,7 +194,7 @@ AA.module('game/ai', (function () {
     if (u.healT > 0) return;
     u.healT = 1;
 
-    var amount = u.def.healPs * AA.Content.attributes.enemyScale(w.wave), healed = 0;
+    var amount = u.def.healPs * AA.Game.run.enemyScale(w.wave), healed = 0;
     for (var i = 0; i < w.units.length; i++) {
       var e = w.units[i];
       if (e.dead || e.team !== u.team || e === u) continue;
@@ -727,7 +727,7 @@ AA.module('game/ai', (function () {
     var rage = u.phase === 2;
     var ctx = {
       u: u, hero: hero, rage: rage,
-      scale: AA.Content.attributes.enemyScale(W().wave) * (rage ? 1.15 : 1),
+      scale: AA.Game.run.enemyScale(W().wave) * (rage ? 1.15 : 1),
       dist: M().dist(u, hero)
     };
 

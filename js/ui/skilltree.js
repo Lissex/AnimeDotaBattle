@@ -22,9 +22,10 @@ AA.module('ui/skilltree', (function () {
       var lv = h.skillLv[s.id] || 0;
       if (s.type !== 'passive') slot++;
 
+      // тусклые деления — ранги, ещё закрытые уровнем героя
       var pips = '';
       for (var i = 0; i < A.MAX_SKILL_LV; i++) {
-        pips += '<div class="pip' + (i < lv ? ' on' : '') + '"></div>';
+        pips += '<div class="pip' + (i < lv ? ' on' : (i >= cap ? ' cap' : '')) + '"></div>';
       }
 
       var row = d.el('div', 'su',
@@ -37,6 +38,9 @@ AA.module('ui/skilltree', (function () {
 
       var btn = d.el('button', 'btn btn-main', '+');
       btn.disabled = h.pts <= 0 || lv >= cap;
+      btn.title = lv >= cap && lv < A.MAX_SKILL_LV
+        ? 'Следующий ранг откроется с уровнем героя'
+        : '';
       btn.onclick = function () {
         if (h.pts <= 0 || lv >= cap) return;
         h.skillLv[s.id] = lv + 1;

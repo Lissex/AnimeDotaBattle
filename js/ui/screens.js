@@ -4,7 +4,8 @@ AA.module('ui/screens', (function () {
   'use strict';
 
   var SCREENS = ['loading', 'menu', 'heroes', 'battle'];
-  var OVERLAYS = ['shop', 'skills', 'talent', 'comic', 'settings', 'pause', 'over', 'howto'];
+  var OVERLAYS = ['shop', 'skills', 'talent', 'comic', 'event', 'leaders',
+    'settings', 'pause', 'over', 'howto'];
 
   var current = 'loading';
   var run = { revived: false, x2used: false, pendingSouls: 0, pendingStart: false };
@@ -24,7 +25,13 @@ AA.module('ui/screens', (function () {
   function closeAll() { OVERLAYS.forEach(close); }
   function isBattle() { return current === 'battle'; }
 
-  /* ---------------- забег ---------------- */
+  /* ---------------- забег ----------------
+     Перед обычным забегом сначала выбираются условия. */
+  function beginRun() {
+    AA.Game.run.reset(null);
+    AA.UI.events.chooseModifier(function () { startRun(false); });
+  }
+
   function startRun(training) {
     var d = D(), A = AA.Content.attributes;
     var save = d.save();
@@ -32,6 +39,8 @@ AA.module('ui/screens', (function () {
 
     // уровень больше не покупается: все начинают с первого
     var level = training ? A.MAX_HERO_LV : 1;
+    if (training) AA.Game.run.reset(null);
+
     var hero = AA.Game.factory.hero(def, level, {}, []);
     hero.skin = AA.Content.skins.get(def.id, save.skins[def.id] || 'default');
 
@@ -77,16 +86,21 @@ AA.module('ui/screens', (function () {
     if (w.training) { toMenu(); return; }
 
     var save = d.save();
-    var souls = AA.Content.attributes.soulsFor(w.wave, w.kills);
+    var souls = AA.Game.run.souls(AA.Content.attributes.soulsFor(w.wave, w.kills));
     run.pendingSouls = souls;
     if (w.wave > save.best) save.best = w.wave;
     save.souls += souls;
     AA.Platform.storage.commit(true);
 
+    // рекорд уходит в общую таблицу Яндекса
+    AA.Platform.leaderboard.submit(w.wave);
+
     d.$('over-wave').textContent = w.wave;
     d.$('over-kills').textContent = w.kills;
     d.$('over-souls').textContent = d.fmt(souls);
-    d.$('btn-revive').style.display = (run.revived || !AA.Platform.sdk.hasAds()) ? 'none' : '';
+    // при модификаторе «Одна жизнь» воскрешение недоступно
+    var canRevive = !run.revived && AA.Platform.sdk.hasAds() && !AA.Game.run.state.oneLife;
+    d.$('btn-revive').style.display = canRevive ? '' : 'none';
     d.$('btn-x2').style.display = (run.x2used || !AA.Platform.sdk.hasAds()) ? 'none' : '';
 
     closeAll();
@@ -98,6 +112,7 @@ AA.module('ui/screens', (function () {
     closeAll();
     AA.Game.loop.stop();
     AA.Platform.sdk.gameplayStop();
+    AA.Core.audio.stopMusic();
     W().training = false;
     show('menu');
     AA.UI.menu.refresh();
@@ -120,6 +135,7 @@ AA.module('ui/screens', (function () {
     show: show, open: open, close: close, closeAll: closeAll,
     isBattle: isBattle, current: function () { return current; },
     run: run,
-    startRun: startRun, endRun: endRun, toMenu: toMenu, onDeath: onDeath
+    beginRun: beginRun, startRun: startRun,
+    endRun: endRun, toMenu: toMenu, onDeath: onDeath
   };
 })());

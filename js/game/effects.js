@@ -76,6 +76,30 @@ AA.module('game/effects', (function () {
   }
 
   function ring(x, y, r, color) { W().rings.push({ x: x, y: y, r: 12, max: r, c: color, t: 0, life: .48 }); }
+
+  /** Ударная волна: тонкое быстрое кольцо с искажением. Добивания и взрывы. */
+  function shock(x, y, r, color, life) {
+    W().shocks.push({ x: x, y: y, max: r, c: color, t: 0, life: life || .34 });
+  }
+
+  /** Добивание: волна, искры и короткая засветка экрана.
+      Чем крупнее цель, тем заметнее — босс гасит кадр целиком. */
+  function killFlash(u, color) {
+    var w = W(), weight = M().clamp(u.r / 26, .5, 2.6);
+    shock(u.x, u.y, 60 + u.r * 3.2, color, .3 + weight * .06);
+    sparks(u.x, u.y, color, Math.round(8 + weight * 8));
+    burst(u.x, u.y, color, Math.round(6 + weight * 6));
+    hitstop(u.isBoss ? .075 : .022 * weight);
+    if (u.isBoss || u.elite) shake(u.isBoss ? 10 : 4);
+    bloom(color, u.isBoss ? .8 : Math.min(.34, .12 * weight));
+  }
+
+  /** Мягкая засветка кадра — мягче, чем flash, и всегда осветляющая. */
+  function bloom(color, t) {
+    var w = W();
+    w.bloomC = color;
+    w.bloomT = Math.max(w.bloomT, t);
+  }
   function aura(u, r, color) { W().auras.push({ x: u.x, y: u.y, r: r, c: color }); }
   function slash(a, b, color) { W().slashes.push({ x1: a.x, y1: a.y, x2: b.x, y2: b.y, c: color, t: 0, life: .2 }); }
   function pillar(x, y, c) { W().pillars.push({ x: x, y: y, c: c, t: 0, life: .5 }); }
@@ -177,7 +201,7 @@ AA.module('game/effects', (function () {
       o.y += o.vy * dt; o.x += o.vx * dt; o.vy *= .92;
       if (o.t >= o.life) w.floats.splice(i, 1);
     }
-    ['rings', 'bolts', 'slashes', 'corpses', 'pillars', 'cones', 'swipes', 'muzzles'].forEach(function (k) {
+    ['rings', 'bolts', 'slashes', 'corpses', 'pillars', 'cones', 'swipes', 'muzzles', 'shocks'].forEach(function (k) {
       var list = w[k];
       for (var j = list.length - 1; j >= 0; j--) {
         list[j].t += dt;
@@ -187,6 +211,7 @@ AA.module('game/effects', (function () {
 
     if (w.shakeT > 0) { w.shakeT -= dt; if (w.shakeT <= 0) w.shakeMag = 0; }
     if (w.flashT > 0) w.flashT = Math.max(0, w.flashT - dt * 2.2);
+    if (w.bloomT > 0) w.bloomT = Math.max(0, w.bloomT - dt * 3.4);
 
     // фоновые угольки под цвет карты — только в видимой области
     if (w.map && Math.random() < dt * 14) {
@@ -210,7 +235,8 @@ AA.module('game/effects', (function () {
   return {
     floatText: floatText, burst: burst, sparks: sparks, sparkle: sparkle,
     spinBurst: spinBurst, ember: ember, swipe: swipe, muzzle: muzzle,
-    ring: ring, aura: aura, slash: slash, pillar: pillar, bolt: bolt,
+    ring: ring, shock: shock, killFlash: killFlash, bloom: bloom,
+    aura: aura, slash: slash, pillar: pillar, bolt: bolt,
     telegraph: telegraph, zone: zone, wall: wall, cone: cone,
     shake: shake, flash: flash, hitstop: hitstop, timer: timer,
     update: update,

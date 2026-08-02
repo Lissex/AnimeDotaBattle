@@ -28,6 +28,7 @@ AA.module('render/units', (function () {
     if (u.isEidolon) isHero = false;
 
     if (u.isBoss) bossAura(ctx, u, y, m);
+    if (u.elite) eliteAura(ctx, u, y, m, w);
     buffGlow(ctx, u, y, m);
 
     // отдача после выстрела — корпус чуть отходит назад
@@ -63,6 +64,7 @@ AA.module('render/units', (function () {
     }
     ctx.restore();
 
+    rimLight(ctx, u, y, w, m);
     if (u.isIllusion) illusionMark(ctx, u, y, w);
     statusRings(ctx, u, y, w);
     if (u !== w.hero) healthBar(ctx, u, y, m);
@@ -83,6 +85,28 @@ AA.module('render/units', (function () {
     ctx.restore();
   }
 
+  /** Контровой свет: узкий серп по верхнему краю фигуры в цвете арены.
+      Дешёвый приём, но силуэт сразу отделяется от фона и появляется объём. */
+  function rimLight(ctx, u, y, w, m) {
+    if (!w.map || B().isInvisible(u)) return;
+    var color = u.isBoss ? (u.glow || w.map.accent) : w.map.accent;
+    var strength = u.isBoss ? .5 : (u.team === 0 ? .42 : .3);
+
+    ctx.save();
+    ctx.globalCompositeOperation = 'lighter';
+    ctx.globalAlpha = strength;
+    ctx.strokeStyle = color;
+    ctx.lineWidth = Math.max(1.6, u.r * .1);
+    ctx.lineCap = 'round';
+    ctx.shadowColor = color;
+    ctx.shadowBlur = u.r * .45;
+    // серп сверху-слева: источник света условно за левым плечом
+    ctx.beginPath();
+    ctx.arc(u.x, y - u.r * .12, u.r * .92, Math.PI * 1.08, Math.PI * 1.86);
+    ctx.stroke();
+    ctx.restore();
+  }
+
   function bossAura(ctx, u, y, m) {
     var pulse = 1 + Math.sin(W().time * 3) * .07;
     var g = ctx.createRadialGradient(u.x, y, u.r * .5, u.x, y, u.r * 2.5 * pulse);
@@ -90,6 +114,35 @@ AA.module('render/units', (function () {
     g.addColorStop(1, 'rgba(0,0,0,0)');
     ctx.fillStyle = g;
     ctx.beginPath(); ctx.arc(u.x, y, u.r * 2.5 * pulse, 0, 6.2832); ctx.fill();
+  }
+
+  /** Элита: золотая кайма и корона, чтобы её было видно в толпе. */
+  function eliteAura(ctx, u, y, m, w) {
+    var color = u.elite.color;
+    var pulse = 1 + Math.sin(w.time * 4 + (u.wob || 0)) * .08;
+
+    var g = ctx.createRadialGradient(u.x, y, u.r * .5, u.x, y, u.r * 2.1 * pulse);
+    g.addColorStop(0, m.rgba(color, .26));
+    g.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = g;
+    ctx.beginPath(); ctx.arc(u.x, y, u.r * 2.1 * pulse, 0, 6.2832); ctx.fill();
+
+    // корона над головой
+    ctx.save();
+    ctx.fillStyle = color;
+    ctx.shadowColor = color; ctx.shadowBlur = 10;
+    var cy = y - u.r * 1.7, cw = u.r * .5;
+    ctx.beginPath();
+    ctx.moveTo(u.x - cw, cy + 5);
+    ctx.lineTo(u.x - cw, cy - 3);
+    ctx.lineTo(u.x - cw * .5, cy + 1);
+    ctx.lineTo(u.x, cy - 6);
+    ctx.lineTo(u.x + cw * .5, cy + 1);
+    ctx.lineTo(u.x + cw, cy - 3);
+    ctx.lineTo(u.x + cw, cy + 5);
+    ctx.closePath();
+    ctx.fill();
+    ctx.restore();
   }
 
   function buffGlow(ctx, u, y, m) {
@@ -201,12 +254,12 @@ AA.module('render/units', (function () {
     ctx.fillStyle = g;
     ctx.fillRect(bx, by, bw * m.clamp(u.hp / u.maxHp, 0, 1), bh);
 
-    if (u.isBoss || u.isDummy) {
+    if (u.isBoss || u.isDummy || u.elite) {
       ctx.textAlign = 'center';
-      ctx.font = '900 11px "Trebuchet MS",sans-serif';
+      ctx.font = '900 ' + (u.elite && !u.isBoss ? 9 : 11) + 'px "Trebuchet MS",sans-serif';
       ctx.lineWidth = 3.5; ctx.strokeStyle = 'rgba(0,0,0,.85)';
       ctx.strokeText(u.name.toUpperCase(), u.x, by - 6);
-      ctx.fillStyle = u.isBoss ? '#ffd24a' : '#8b97bd';
+      ctx.fillStyle = u.isBoss ? '#ffd24a' : (u.elite ? u.elite.color : '#8b97bd');
       ctx.fillText(u.name.toUpperCase(), u.x, by - 6);
     }
   }

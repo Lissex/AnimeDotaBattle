@@ -103,7 +103,7 @@ AA.module('game/terrain', (function () {
   /** Урон от лавы и замедление на льду. */
   function applySurface(u, dt) {
     var w = W(), m = M();
-    var scale = AA.Content.attributes.enemyScale(w.wave);
+    var scale = AA.Game.run.enemyScale(w.wave);
     for (var i = 0; i < w.decals.length; i++) {
       var p = w.decals[i], meta = p.meta;
       if (!meta.hazard && !meta.slow) continue;

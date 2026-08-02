@@ -88,6 +88,10 @@
 
   /* ---------------- старт ---------------- */
   function boot() {
+    // умения описаны четырьмя рангами, а играем на восьми —
+    // достраиваем недостающие значения до старта
+    AA.Content.skills.finalize();
+
     lockScroll();
     bindLifecycle();
 
@@ -108,11 +112,21 @@
       AA.UI.shop.bind();
       AA.UI.skilltree.bind();
       AA.UI.comic.bind();
+      AA.UI.leaderboard.bind();
       AA.UI.training.bind();
       AA.UI.controls.bind();
 
       AA.Core.audio.set(save.sound !== false);
+      AA.Core.audio.setMusic(save.music !== false);
       AA.Game.effects.setShake(save.shake !== false);
+
+      // браузеры не дают завести звук до первого касания
+      ['pointerdown', 'keydown'].forEach(function (ev) {
+        window.addEventListener(ev, function once() {
+          AA.Core.audio.unlock();
+          window.removeEventListener(ev, once);
+        });
+      });
 
       AA.UI.menu.refresh();
       AA.UI.screens.show('menu');

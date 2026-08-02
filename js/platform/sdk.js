@@ -32,6 +32,7 @@ AA.module('platform/sdk', (function () {
       .then(function () { return window.YaGames.init(); })
       .then(function (sdk) {
         ysdk = sdk;
+        window.ysdk = sdk;                    // нужен platform/leaderboard
         onProgress(45, 'Соединение с Яндекс Играми');
 
         try { i18n().detect(ysdk.environment.i18n.lang); } catch (e) { i18n().detect('ru'); }
@@ -62,6 +63,7 @@ AA.module('platform/sdk', (function () {
           store().merge(res.save);
         }
         ready = true;
+        AA.Platform.leaderboard.init();       // не блокируем загрузку
         onProgress(100, 'Готово');
         return store().data;
       })

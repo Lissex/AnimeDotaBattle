@@ -359,6 +359,10 @@ AA.module('render/icons', (function () {
     maul: 'hammer', veil: 'cloud',
     heart: 'heart', scythe: 'axe', grimoire: 'book', bulwark: 'shield',
     shard: 'crystal',
+    /* --- артефакты --- */
+    a_reaper: 'axe', a_bastion: 'shield', a_omniscience: 'book',
+    a_titanpulse: 'heart', a_tempest: 'boot', a_eclipse: 'cloud',
+    a_bloodmoon: 'drop', a_falconer: 'eye', a_aghanim: 'crystal',
 
     /* --- умения: Мясник --- */
     hook: 'hook', rot: 'cloud', dismember: 'dagger', feast: 'skull',

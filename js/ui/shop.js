@@ -4,14 +4,17 @@ AA.module('ui/shop', (function () {
 
   var selectedSlot = -1;
   var filter = 0;
+  var tab = 'shop';        // shop | craft
 
   function D() { return AA.UI.dom; }
   function W() { return AA.Game.world.state; }
-  function SLOTS() { return AA.Content.attributes.INV_SLOTS; }
+  function SLOTS() { return AA.Game.run.slots(); }
 
   function open() {
     var d = D();
     selectedSlot = -1;
+    // если что-то готово к сборке — открываем сразу на этой вкладке
+    if (AA.Content.items.craftable(W().hero.items).length) tab = 'craft';
     renderAll();
     d.$('btn-next-wave').textContent = d.isTraining() ? d.t('ЗАКРЫТЬ') : d.t('СЛЕДУЮЩАЯ ВОЛНА');
     AA.UI.screens.open('shop');
@@ -21,7 +24,8 @@ AA.module('ui/shop', (function () {
     var d = D();
     renderInventory();
     renderStats();
-    renderGrid();
+    renderTabs();
+    if (tab === 'craft') renderCraft(); else renderGrid();
     d.$$('.hud-gold').forEach(function (e) { e.textContent = d.goldText(); });
     AA.UI.hud.renderItems();
   }
@@ -29,6 +33,7 @@ AA.module('ui/shop', (function () {
   function sellPrice(item) {
     return Math.round(item.cost * AA.Content.attributes.SELL_RATE);
   }
+  function buyPrice(item) { return AA.Game.run.price(item); }
 
   /* ---------------- инвентарь и продажа ---------------- */
   function renderInventory() {
@@ -103,6 +108,94 @@ AA.module('ui/shop', (function () {
     box.appendChild(grid);
   }
 
+  /* ---------------- вкладки ---------------- */
+  function renderTabs() {
+    var d = D();
+    d.$$('.shop-mode').forEach(function (b) {
+      b.classList.toggle('on', b.dataset.mode === tab);
+    });
+    d.$('shop-tabs').style.display = tab === 'shop' ? '' : 'none';
+
+    // подсказка, когда что-то уже можно собрать
+    var ready = AA.Content.items.craftable(W().hero.items).length;
+    var badge = d.$('craft-badge');
+    badge.style.display = ready ? '' : 'none';
+    badge.textContent = ready;
+  }
+
+  /* ---------------- сборка артефактов ---------------- */
+  function renderCraft() {
+    var d = D(), box = d.$('shop-grid'), h = W().hero;
+    var R = AA.Content.items.RARITY;
+    box.innerHTML = '';
+
+    var list = AA.Content.items.recipes(h.items);
+    // сначала то, что уже можно собрать
+    list.sort(function (a, b) { return (b.ready ? 1 : 0) - (a.ready ? 1 : 0); });
+
+    list.forEach(function (rec) {
+      var art = rec.art, color = R[5].c;
+      var price = buyPrice(art);
+      var affordable = d.canAfford(price);
+      var can = rec.ready && affordable;
+
+      var card = d.el('div', 'item craft' + (can ? ' can' : (rec.ready ? '' : ' cant')));
+      card.style.borderColor = color + (can ? 'cc' : '44');
+
+      var head = d.el('div', 'item-head');
+      var ico = d.el('div', 'item-ico');
+      ico.appendChild(AA.Render.icons.element(38, art.id, color, color));
+      head.appendChild(ico);
+      var name = d.el('b', null, art.name);
+      name.style.color = color;
+      head.appendChild(name);
+      card.appendChild(head);
+
+      card.insertAdjacentHTML('beforeend', '<p>' + art.d + '</p>');
+
+      // из чего собирается
+      var parts = d.el('div', 'craft-parts');
+      rec.parts.forEach(function (p, i) {
+        if (i) parts.appendChild(d.el('span', 'craft-plus', '+'));
+        var chip = d.el('span', 'craft-part' + (p.owned ? ' has' : ''));
+        chip.appendChild(AA.Render.icons.element(22, p.item.id,
+          p.owned ? R[p.item.t].c : '#3a4260'));
+        chip.appendChild(d.el('span', null, p.item.name));
+        parts.appendChild(chip);
+      });
+      card.appendChild(parts);
+
+      card.insertAdjacentHTML('beforeend',
+        '<div class="price"><span class="ic ic-gold"></span>' + d.fmt(price) +
+        (rec.ready ? '' : ' · нет частей') + '</div>');
+
+      if (can) {
+        card.onclick = function () { craft(rec, price); };
+      }
+      box.appendChild(card);
+    });
+  }
+
+  function craft(rec, price) {
+    var d = D(), h = W().hero;
+    if (!d.spendGold(price)) { AA.UI.toast.show('Не хватает золота'); return; }
+
+    // части исчезают, артефакт занимает один слот вместо двух
+    rec.art.parts.forEach(function (pid) {
+      for (var i = h.items.length - 1; i >= 0; i--) {
+        if (h.items[i].id === pid) { h.items.splice(i, 1); break; }
+      }
+    });
+    h.items.push(rec.art);
+    AA.Game.stats.recalc(h);
+
+    AA.Core.audio.craft();
+    AA.UI.toast.show('Собран: ' + rec.art.name);
+    AA.Game.effects.ring(h.x, h.y, 160, '#ff5ad8');
+    AA.Game.effects.burst(h.x, h.y, '#ff5ad8', 28);
+    renderAll();
+  }
+
   /* ---------------- витрина ---------------- */
   function renderGrid() {
     var d = D(), box = d.$('shop-grid'), h = W().hero;
@@ -110,10 +203,11 @@ AA.module('ui/shop', (function () {
     box.innerHTML = '';
 
     AA.Content.items.LIST
-      .filter(function (it) { return filter === 0 || it.t === filter; })
+      .filter(function (it) { return !it.craftOnly && (filter === 0 || it.t === filter); })
       .forEach(function (it) {
         var owned = h.items.some(function (o) { return o.id === it.id; });
-        var can = !owned && d.canAfford(it.cost) && h.items.length < SLOTS();
+        var price = buyPrice(it);
+        var can = !owned && d.canAfford(price) && h.items.length < SLOTS();
         var color = R[it.t].c;
 
         var card = d.el('div', 'item ' + (owned ? 'owned' : (can ? 'can' : 'cant')));
@@ -130,12 +224,12 @@ AA.module('ui/shop', (function () {
         card.insertAdjacentHTML('beforeend',
           '<p>' + it.d + '</p>' +
           '<div class="price"><span class="ic ic-gold"></span>' +
-          (owned ? 'куплено' : d.fmt(it.cost)) + '</div>');
+          (owned ? 'куплено' : d.fmt(price)) + '</div>');
 
         if (can) {
           card.onclick = function () {
             if (h.items.length >= SLOTS()) { AA.UI.toast.show('Инвентарь полон'); return; }
-            if (!d.spendGold(it.cost)) { AA.UI.toast.show('Не хватает золота'); return; }
+            if (!d.spendGold(price)) { AA.UI.toast.show('Не хватает золота'); return; }
             h.items.push(it);
             AA.Game.stats.recalc(h);
             AA.Core.audio.buy();
@@ -150,16 +244,33 @@ AA.module('ui/shop', (function () {
   function autoBuy(silent) {
     var d = D(), h = W().hero, bought = 0, guard = 0;
 
+    // сначала собираем всё, что можно — артефакт освобождает слот
+    var ready = AA.Content.items.craftable(h.items);
+    for (var c = 0; c < ready.length; c++) {
+      var art = ready[c], price = buyPrice(art);
+      if (!d.canAfford(price)) continue;
+      var rec = { art: art };
+      d.spendGold(price);
+      art.parts.forEach(function (pid) {
+        for (var i = h.items.length - 1; i >= 0; i--) {
+          if (h.items[i].id === pid) { h.items.splice(i, 1); break; }
+        }
+      });
+      h.items.push(art);
+      bought++;
+    }
+
     while (h.items.length < SLOTS() && guard++ < 12) {
       var best = null, bestScore = 0;
       AA.Content.items.LIST.forEach(function (it) {
+        if (it.craftOnly) return;
         if (h.items.some(function (o) { return o.id === it.id; })) return;
-        if (!d.canAfford(it.cost)) return;
+        if (!d.canAfford(buyPrice(it))) return;
         var score = AA.Content.items.score(it, h);
         if (score > bestScore) { bestScore = score; best = it; }
       });
       if (!best) break;
-      d.spendGold(best.cost);
+      d.spendGold(buyPrice(best));
       h.items.push(best);
       bought++;
     }
@@ -184,12 +295,16 @@ AA.module('ui/shop', (function () {
     d.$('btn-lvlup').onclick = function () { AA.UI.skilltree.open(); };
     d.$('btn-autobuy').onclick = function () { autoBuy(false); };
 
-    d.$$('.shop-tab').forEach(function (tab) {
-      tab.onclick = function () {
-        filter = +tab.dataset.t;
-        d.$$('.shop-tab').forEach(function (x) { x.classList.toggle('on', x === tab); });
+    d.$$('.shop-tab').forEach(function (btn) {
+      btn.onclick = function () {
+        filter = +btn.dataset.t;
+        d.$$('.shop-tab').forEach(function (x) { x.classList.toggle('on', x === btn); });
         renderGrid();
       };
+    });
+
+    d.$$('.shop-mode').forEach(function (btn) {
+      btn.onclick = function () { tab = btn.dataset.mode; renderAll(); };
     });
   }
 

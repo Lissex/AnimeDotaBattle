@@ -22,9 +22,12 @@ AA.module('content/attributes', (function () {
   var NAME = { str: 'СИЛА', agi: 'ЛОВКОСТЬ', int: 'ИНТЕЛЛЕКТ' };
   var COLOR = { str: '#ff6b4a', agi: '#3ddb7f', int: '#4aa8ff' };
 
-  /* ---- прогрессия ---- */
+  /* ---- прогрессия ----
+     Восемь рангов умения, а не четыре: иначе к 15 уровню всё
+     выкачано и оставшиеся 35 уровней некуда девать. Значения
+     рангов 5–8 достраиваются автоматически (content/skills). */
   var MAX_HERO_LV = 50;
-  var MAX_SKILL_LV = 4;
+  var MAX_SKILL_LV = 8;
   var INV_SLOTS = 6;
   var SELL_RATE = 0.6;
 
@@ -60,10 +63,13 @@ AA.module('content/attributes', (function () {
     goldPerWave: function (w) { return Math.round(280 + 95 * w + 7 * w * w); },
     soulsFor: function (wave, kills) { return Math.round(wave * 34 + kills * 3); },
 
-    enemyScale: function (w) { return 1 + 0.125 * (w - 1) + 0.0055 * (w - 1) * (w - 1); },
-    enemyCount: function (w) { return Math.min(2 + Math.floor(w / 3), 8); },
+    // герой теперь заметно сильнее к концу — враги растут быстрее
+    enemyScale: function (w) { return 1 + 0.13 * (w - 1) + 0.0078 * (w - 1) * (w - 1); },
+    enemyCount: function (w) { return Math.min(2 + Math.floor(w / 3), 9); },
 
-    /** Потолок уровня умения растёт вместе с уровнем героя. */
-    skillCap: function (heroLv) { return Math.min(MAX_SKILL_LV, 1 + Math.floor((heroLv - 1) / 4)); }
+    /** Потолок ранга умения растёт вместе с уровнем героя.
+        Шаг в 6 уровней: восьмой ранг открывается только к 42-му,
+        поэтому очки есть куда вкладывать почти весь забег. */
+    skillCap: function (heroLv) { return Math.min(MAX_SKILL_LV, 1 + Math.floor(heroLv / 6)); }
   };
 })());

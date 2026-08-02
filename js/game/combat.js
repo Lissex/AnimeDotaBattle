@@ -36,6 +36,12 @@ AA.module('game/combat', (function () {
     // талант «Раскол льда»: замороженные получают вдвое
     if (src && AA.Game.talents.has(src, 'fr_shatter') && B().has(tgt, 'freeze')) dmg *= 2;
 
+    // свойство элиты может погасить удар
+    if (tgt.elite && tgt.elite.onDamaged) {
+      var mul = tgt.elite.onDamaged(tgt, dmg);
+      if (typeof mul === 'number') dmg *= mul;
+    }
+
     var crit = false;
     if (isAuto && s.crit > 0 && Math.random() * 100 < s.crit) { dmg *= s.critMult; crit = true; }
     if (isAuto && src) {
@@ -134,9 +140,11 @@ AA.module('game/combat', (function () {
       glow: tgt.glow || tgt.c1, t: 0, life: 1.3
     });
     fx.burst(tgt.x, tgt.y, tgt.glow || tgt.c1, tgt.isBoss ? 52 : 16);
+    fx.killFlash(tgt, tgt.glow || tgt.c1);
     SFX().die();
 
     if (tgt.role === 'bomber' && tgt.def) explode(tgt);
+    if (tgt.elite && tgt.elite.onDeath) tgt.elite.onDeath(tgt);
     if (tgt.isDummy) { respawnDummy(tgt); return; }
 
     if (tgt.team === 1) {
@@ -155,7 +163,7 @@ AA.module('game/combat', (function () {
 
   function explode(tgt) {
     var w = W(), fx = FX();
-    var scale = AA.Content.attributes.enemyScale(w.wave);
+    var scale = AA.Game.run.enemyScale(w.wave);
     var dmgVal = tgt.def.boomDmg * scale, r = tgt.def.boomR;
     fx.ring(tgt.x, tgt.y, r, '#ffe04a');
     fx.burst(tgt.x, tgt.y, '#ffe04a', 34);
@@ -248,6 +256,7 @@ AA.module('game/combat', (function () {
       var dealt = damage(u, target, u.stats.atk, u.magic ? 'magic' : 'phys', true);
 
       if (u.role === 'hexer') B().add(target, { id: 'hex', dur: 2, msMul: .6, color: '#ff4ad0' });
+      if (u.elite && u.elite.onHit) u.elite.onHit(u, target, dealt);
 
       if (cleaveB) {
         var w = W(), m = M(), extra = dealt * cleaveB.cleavePct / 100;

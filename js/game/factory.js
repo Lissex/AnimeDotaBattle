@@ -32,7 +32,7 @@ AA.module('game/factory', (function () {
 
   function enemy(def, isBoss) {
     var w = W(), m = M();
-    var scale = AA.Content.attributes.enemyScale(w.wave);
+    var scale = AA.Game.run.enemyScale(w.wave);
     var u = {
       id: m.uid(), team: 1, kind: isBoss ? 'boss' : 'mob', name: def.name, defId: def.id,
       shape: def.shape, c1: def.c1, c2: def.c2, glow: def.glow || '#ff5a4a', r: def.r || 18,
@@ -63,9 +63,31 @@ AA.module('game/factory', (function () {
 
       gold: Math.round((isBoss ? 300 : 44) * (1 + w.wave * .16))
     };
+
+    if (!isBoss) maybeElite(u);
+
     AA.Game.stats.recalc(u);
     u.hp = u.maxHp;
     return u;
+  }
+
+  /** С некоторым шансом обычный враг становится элитным. */
+  function maybeElite(u) {
+    var w = W(), E = AA.Content.elites;
+    if (u.role === 'dummy' || u.eliteChild) return;
+
+    var chance = E.chanceFor(w.wave) + AA.Game.run.state.eliteChance;
+    if (Math.random() > chance) return;
+
+    var mod = E.roll();
+    u.elite = mod;
+    u.name = mod.name + ' · ' + u.name;
+    u.r = Math.round(u.r * 1.18);
+    u.base.hp *= 1.6;
+    u.base.atk *= 1.25;
+    u.gold = Math.round(u.gold * 3.2);
+
+    if (mod.stats) mod.stats(u);
   }
 
   /* ============================================================
@@ -125,8 +147,29 @@ AA.module('game/factory', (function () {
      Призванные существа на стороне игрока. Бьют магией, живут
      ограниченное время и один раз делятся надвое после серии атак.
      ============================================================ */
+  /** Больше этого числа эйдолонов на поле не держим. */
+  var MAX_EIDOLONS = 7;
+
+  function countEidolons() {
+    var w = W(), n = 0;
+    for (var i = 0; i < w.units.length; i++) {
+      if (!w.units[i].dead && w.units[i].isEidolon) n++;
+    }
+    return n;
+  }
+
   function eidolon(owner, cfg, x, y) {
     var w = W(), m = M();
+    if (countEidolons() >= MAX_EIDOLONS) return null;
+
+    // потомство слабее родителя, иначе деление превращается в лавину
+    var tier = cfg.tier || 0;
+    var weaken = tier === 0 ? 1 : (tier === 1 ? .6 : .38);
+
+    // урон тянется за силой заклинаний хозяина — иначе к поздним
+    // волнам эйдолоны перестают что-либо значить
+    var spBonus = owner && owner.stats ? 1 + owner.stats.sp / 260 : 1;
+
     var u = {
       id: m.uid(), team: 0, kind: 'eidolon', name: 'Эйдолон',
       shape: 'eidolon', anim: 'float',
@@ -134,7 +177,8 @@ AA.module('game/factory', (function () {
 
       attr: null,
       base: {
-        hp: cfg.hp, mp: 0, atk: cfg.atk, armor: cfg.armor,
+        hp: cfg.hp * weaken, mp: 0,
+        atk: cfg.atk * weaken * spBonus, armor: cfg.armor * weaken,
         ms: 300, as: cfg.as || 1.0, range: 120,
         hpReg: 0, mpReg: 0, sp: 0, mr: .25
       },
@@ -147,13 +191,14 @@ AA.module('game/factory', (function () {
 
       isEidolon: true,
       owner: owner,
+      tier: tier,                       // 0 — рождённый умением, дальше потомство
       auraSlow: cfg.auraSlow || 0,      // наследуют поле замедления хозяина
       auraR: cfg.auraR || 380,
       hits: 0,                          // атак до деления
-      splitAt: cfg.splitAt || 6,
+      splitAt: cfg.splitAt || 8,
       canSplit: cfg.canSplit !== false,
       splitCfg: cfg,
-      life: cfg.dur || 30
+      life: (cfg.dur || 30) * (tier ? .7 : 1)
     };
 
     AA.Game.stats.recalc(u);
@@ -171,18 +216,26 @@ AA.module('game/factory', (function () {
     if (!u.canSplit || u.dead) return;
     u.canSplit = false;
 
-    var cfg = u.splitCfg;
+    // потомство рождается на ступень слабее и живёт меньше
+    var childCfg = {};
+    for (var k in u.splitCfg) childCfg[k] = u.splitCfg[k];
+    childCfg.tier = u.tier + 1;
+
     // талант «Бесконечное деление» разрешает детям поделиться ещё раз
-    var childrenSplit = !!cfg.twice && !u.isChild;
+    var childrenSplit = !!u.splitCfg.twice && u.tier === 0;
+
+    var born = 0;
     for (var i = -1; i <= 1; i += 2) {
-      var child = eidolon(u.owner, cfg,
-        u.x + i * 34, u.y + m.rnd(-20, 20));
+      var child = eidolon(u.owner, childCfg, u.x + i * 34, u.y + m.rnd(-20, 20));
       if (!child) continue;
-      child.isChild = true;
       child.canSplit = childrenSplit;
+      born++;
     }
-    AA.Game.effects.ring(u.x, u.y, 70, '#a08aff');
-    u.dead = true;
+
+    if (born) {
+      AA.Game.effects.ring(u.x, u.y, 70, '#a08aff');
+      u.dead = true;
+    }
   }
 
   /** Сколько иллюзий героя сейчас на поле. */
@@ -238,6 +291,6 @@ AA.module('game/factory', (function () {
   return {
     hero: hero, enemy: enemy, minion: minion, dummy: dummy,
     illusion: illusion, countIllusions: countIllusions, dropOldestIllusion: dropOldestIllusion,
-    eidolon: eidolon, splitEidolon: splitEidolon
+    eidolon: eidolon, splitEidolon: splitEidolon, countEidolons: countEidolons
   };
 })());

@@ -45,10 +45,11 @@ AA.module('game/waves', (function () {
 
       AA.Game.effects.flash('#ff4d5e', .3);
       AA.Game.effects.shake(11);
+      AA.Core.audio.setTension(1);            // музыка густеет на боссе
       if (AA.UI.hud.announceBoss) AA.UI.hud.announceBoss(bossDef);
     } else {
       /* --- обычная волна --- */
-      var budget = A.enemyCount(wave), guard = 0;
+      var budget = AA.Game.run.waveSize(wave), guard = 0;
       while (budget > 0 && guard++ < 20) {
         var def = E.roll(wave), pack = def.pack || 1;
         for (var p = 0; p < pack; p++) {
@@ -60,6 +61,8 @@ AA.module('game/waves', (function () {
         }
         budget -= (pack > 1 ? 2 : 1);   // рой занимает два «слота» волны
       }
+      // напряжение копится к следующему боссу
+      AA.Core.audio.setTension((wave % A.BOSS_EVERY) / A.BOSS_EVERY * .8);
     }
     AA.Core.audio.wave();
   }
@@ -85,6 +88,7 @@ AA.module('game/waves', (function () {
     AA.Game.terrain.build(mapId);
     AA.Render.ground.rebuild();
     AA.Render.fx.resetWeather();
+    AA.Core.audio.setMood(W().map);
 
     var c = AA.Game.world.center();
     if (w.hero) {

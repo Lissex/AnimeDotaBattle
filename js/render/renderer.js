@@ -43,6 +43,7 @@ AA.module('render/renderer', (function () {
     depthSorted(ctx);
 
     /* --- 4. поверх --- */
+    fx.shocks();
     fx.swipes();
     fx.bolts();
     fx.pillars();
@@ -83,22 +84,63 @@ AA.module('render/renderer', (function () {
   }
   function byY(a, b) { return a.y - b.y; }
 
-  /** Постобработка идёт в экранных координатах, а не мировых. */
+  /** Постобработка идёт в экранных координатах, а не мировых.
+      Порядок важен: сначала тон карты и туман, потом свет, потом
+      сигнальные слои — иначе вспышки уходят под затемнение. */
   function post(ctx, w, m) {
     var vw = w.view.w, vh = w.view.h;
+    var h = w.hero;
+
+    // виньетка и туман строятся вокруг героя, а не центра экрана:
+    // камера ведёт с опережением, и центр кадра — не там, где игрок
+    var fx = vw / 2, fy = vh / 2;
+    if (h && !h.dead) {
+      fx = m.clamp(h.x - w.cam.x, vw * .2, vw * .8);
+      fy = m.clamp(h.y - w.cam.y, vh * .2, vh * .8);
+    }
 
     if (w.map) {
       ctx.fillStyle = w.map.tint;
       ctx.fillRect(0, 0, vw, vh);
 
+      // туман глубины: даль уходит в цвет неба карты, а не в чёрный —
+      // из-за этого арена читается объёмной
+      var far = m.rgba(w.map.fog || w.map.accent, .16);
+      var fog = ctx.createRadialGradient(
+        fx, fy, Math.min(vw, vh) * .18,
+        fx, fy, Math.max(vw, vh) * .72
+      );
+      fog.addColorStop(0, 'rgba(0,0,0,0)');
+      fog.addColorStop(.62, m.rgba(w.map.fog || w.map.accent, .05));
+      fog.addColorStop(1, far);
+      ctx.fillStyle = fog;
+      ctx.fillRect(0, 0, vw, vh);
+
       var v = ctx.createRadialGradient(
-        vw / 2, vh / 2, Math.min(vw, vh) * .32,
-        vw / 2, vh / 2, Math.max(vw, vh) * .8
+        fx, fy, Math.min(vw, vh) * .3,
+        fx, fy, Math.max(vw, vh) * .82
       );
       v.addColorStop(0, 'rgba(0,0,0,0)');
-      v.addColorStop(1, 'rgba(0,0,0,.7)');
+      v.addColorStop(1, 'rgba(0,0,0,.72)');
       ctx.fillStyle = v;
       ctx.fillRect(0, 0, vw, vh);
+
+      // тёплый контровой свет от акцента карты по краю кадра
+      var rim = ctx.createLinearGradient(0, 0, 0, vh);
+      rim.addColorStop(0, m.rgba(w.map.accent, .10));
+      rim.addColorStop(.45, 'rgba(0,0,0,0)');
+      ctx.fillStyle = rim;
+      ctx.fillRect(0, 0, vw, vh);
+    }
+
+    // мягкая засветка добивания — осветляющая, поверх затемнения
+    if (w.bloomT > 0) {
+      ctx.save();
+      ctx.globalCompositeOperation = 'lighter';
+      ctx.globalAlpha = Math.min(.32, w.bloomT * .3);
+      ctx.fillStyle = w.bloomC;
+      ctx.fillRect(0, 0, vw, vh);
+      ctx.restore();
     }
 
     if (w.flashT > 0) {
@@ -109,12 +151,11 @@ AA.module('render/renderer', (function () {
     }
 
     // красная кайма при низком здоровье
-    var h = w.hero;
     if (h && !h.dead && h.hp / h.maxHp < .3) {
       var pulse = .18 + Math.sin(w.time * 6) * .08;
       var g = ctx.createRadialGradient(
-        vw / 2, vh / 2, Math.min(vw, vh) * .3,
-        vw / 2, vh / 2, Math.max(vw, vh) * .7
+        fx, fy, Math.min(vw, vh) * .3,
+        fx, fy, Math.max(vw, vh) * .7
       );
       g.addColorStop(0, 'rgba(255,0,30,0)');
       g.addColorStop(1, 'rgba(255,0,30,' + pulse + ')');

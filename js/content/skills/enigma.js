@@ -59,14 +59,15 @@
     sacrifice: {
       id: 'sacrifice', name: 'Тёмное жертвоприношение', icon: '☠', color: '#5a3ab0',
       type: 'active', ai: 'buff',
-      mana: [75, 85, 95, 105], cd: [35, 33, 31, 29],
-      atk: [16, 24, 32, 40], hp: [180, 200, 220, 240], armor: [2, 3, 4, 5],
-      count: 3, dur: 30, splitAt: 6, range: 460,
+      mana: [90, 105, 120, 135], cd: [40, 38, 36, 34],
+      atk: [14, 21, 28, 35], hp: [160, 185, 210, 235], armor: [2, 3, 4, 5],
+      count: 3, dur: 26, splitAt: 8, range: 460, maxOnField: 7,
       desc: function (l) {
         return 'Приносит в жертву обычного врага рядом и поднимает ' + this.count +
           ' эйдолонов: ' + this.atk[l] + ' урона, ' + this.hp[l] + ' здоровья, ' +
-          this.armor[l] + ' брони. Живут ' + this.dur + ' сек и один раз делятся ' +
-          'надвое после ' + this.splitAt + ' атак.';
+          this.armor[l] + ' брони. Живут ' + this.dur + ' сек, один раз делятся ' +
+          'после ' + this.splitAt + ' атак. Потомство слабее родителя, ' +
+          'на поле не больше ' + this.maxOnField + '.';
       },
       cast: function (u, l) {
         var a = g(), self = this;
@@ -87,6 +88,12 @@
           auraSlow: auraSlow(u), auraR: 380
         };
 
+        // новый призыв заменяет старый выводок, а не суммируется с ним
+        var w = AA.Game.world.state;
+        for (var q = 0; q < w.units.length; q++) {
+          if (w.units[q].isEidolon && !w.units[q].dead) w.units[q].dead = true;
+        }
+
         for (var i = 0; i < self.count; i++) {
           var ang = i / self.count * 6.2832;
           AA.Game.factory.eidolon(u, cfg,
@@ -103,7 +110,7 @@
       id: 'singularity', name: 'Сингулярность', icon: '🕳', color: '#3a1a6b',
       type: 'active', ai: 'aoe',
       mana: [200, 250, 300, 350], cd: [70, 64, 58, 52],
-      dps: [50, 100, 150, 200], dur: 4, radius: 400, range: 520,
+      dps: [60, 115, 175, 235], dur: 4, radius: 265, range: 520,
       pctDps: 4,                                   // добавка от осколка, % макс. здоровья
       desc: function (l) {
         return 'Открывает чёрную дыру на ' + this.dur + ' сек: враги стягиваются ' +
@@ -129,27 +136,23 @@
           x: c.x, y: c.y, r: self.radius, dur: self.dur, src: u,
           color: '#3a1a6b', style: 'hole',
           onTick: function (z, dt) {
-            if (grow) z.r = Math.min(self.radius * 1.45, z.r + 55 * dt);
+            if (grow) z.r = Math.min(self.radius * 1.4, z.r + 34 * dt);
 
-            a.aoeApply(u, z.x, z.y, z.r, function (e) {
-              // тянем к центру
+            // радиус захвата чуть больше визуального — иначе враги
+            // «прилипают» к самой кромке и выглядят не втянутыми
+            a.aoeApply(u, z.x, z.y, z.r * 1.15, function (e) {
               var dx = z.x - e.x, dy = z.y - e.y;
               var d = Math.sqrt(dx * dx + dy * dy) || .01;
-              var pull = (grow ? 190 : 150) * dt;
-              e.x += dx / d * Math.min(pull, d);
-              e.y += dy / d * Math.min(pull, d);
+              // ближе к центру тянет сильнее — воронка, а не лифт
+              var force = (grow ? 260 : 210) * (.45 + .55 * (1 - d / (z.r * 1.15)));
+              e.x += dx / d * Math.min(force * dt, d);
+              e.y += dy / d * Math.min(force * dt, d);
               AA.Game.world.confine(e);
 
               a.buff(e, { id: 'freeze', dur: .4, stun: true, quiet: true, color: '#3a1a6b' });
               a.damage(u, e, dps * dt, 'magic');
               if (pct) a.damage(u, e, e.maxHp * pct / 100 * dt, 'magic');
             });
-
-            if (Math.random() < dt * 12) {
-              var ang = Math.random() * 6.2832;
-              a.burst(z.x + Math.cos(ang) * z.r * .8,
-                z.y + Math.sin(ang) * z.r * .8, '#8a5ae8', 2);
-            }
           }
         });
 

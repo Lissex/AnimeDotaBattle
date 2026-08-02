@@ -19,6 +19,7 @@ AA.module('platform/storage', (function () {
     story: {},          // heroId → сколько глав открыто
 
     sound: true,
+    music: true,
     shake: true,
     numbers: true,      // показывать числа урона
     forceGame: false,   // играть по-честному, даже если SDK не загрузился

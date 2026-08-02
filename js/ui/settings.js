@@ -17,6 +17,7 @@ AA.module('ui/settings', (function () {
   function sync() {
     var d = D(), s = save();
     d.$('set-sound').checked = s.sound !== false;
+    d.$('set-music').checked = s.music !== false;
     d.$('set-shake').checked = s.shake !== false;
     d.$('set-numbers').checked = s.numbers !== false;
 
@@ -35,6 +36,12 @@ AA.module('ui/settings', (function () {
     d.$('set-sound').onchange = function () {
       save().sound = this.checked;
       AA.Core.audio.set(this.checked);
+      AA.Platform.storage.commit();
+    };
+
+    d.$('set-music').onchange = function () {
+      save().music = this.checked;
+      AA.Core.audio.setMusic(this.checked);
       AA.Platform.storage.commit();
     };
 
