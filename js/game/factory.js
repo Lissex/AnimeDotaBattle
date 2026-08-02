@@ -107,7 +107,7 @@ AA.module('game/factory', (function () {
       guard: opts.guard || null,          // пока жив — иллюзия неуязвима
       lockTarget: opts.lockTarget || null,// бьёт только эту цель
       life: opts.dur || 20,
-      meta: !!src.meta                    // состояние метаморфозы копируется
+      morph: !!src.morph                  // состояние метаморфозы копируется
     };
 
     AA.Game.stats.recalc(u);
@@ -118,6 +118,71 @@ AA.module('game/factory', (function () {
     AA.Game.effects.burst(u.x, u.y, opts.color || '#8ab0ff', 14);
     AA.Game.effects.ring(u.x, u.y, 60, opts.color || '#8ab0ff');
     return u;
+  }
+
+  /* ============================================================
+     ЭЙДОЛОНЫ
+     Призванные существа на стороне игрока. Бьют магией, живут
+     ограниченное время и один раз делятся надвое после серии атак.
+     ============================================================ */
+  function eidolon(owner, cfg, x, y) {
+    var w = W(), m = M();
+    var u = {
+      id: m.uid(), team: 0, kind: 'eidolon', name: 'Эйдолон',
+      shape: 'eidolon', anim: 'float',
+      c1: '#7a5ae8', c2: '#1a1030', glow: '#a08aff', r: 15,
+
+      attr: null,
+      base: {
+        hp: cfg.hp, mp: 0, atk: cfg.atk, armor: cfg.armor,
+        ms: 300, as: cfg.as || 1.0, range: 120,
+        hpReg: 0, mpReg: 0, sp: 0, mr: .25
+      },
+      items: [], skillLv: {}, skills: null, level: 1,
+
+      x: x, y: y, vx: 0, vy: 0, face: m.rnd(0, 6.2832),
+      magic: true, atkCd: m.rnd(0, .5), cds: {}, buffs: [], toggles: {},
+      flash: 0, spin: 0, swing: 0, step: m.rnd(0, 6), wob: m.rnd(0, 6.28),
+      dead: false,
+
+      isEidolon: true,
+      owner: owner,
+      auraSlow: cfg.auraSlow || 0,      // наследуют поле замедления хозяина
+      auraR: cfg.auraR || 380,
+      hits: 0,                          // атак до деления
+      splitAt: cfg.splitAt || 6,
+      canSplit: cfg.canSplit !== false,
+      splitCfg: cfg,
+      life: cfg.dur || 30
+    };
+
+    AA.Game.stats.recalc(u);
+    u.hp = u.maxHp;
+    AA.Game.world.confine(u);
+    w.units.push(u);
+
+    AA.Game.effects.burst(u.x, u.y, '#a08aff', 12);
+    return u;
+  }
+
+  /** Деление эйдолона надвое — вызывается из боя после N атак. */
+  function splitEidolon(u) {
+    var m = M();
+    if (!u.canSplit || u.dead) return;
+    u.canSplit = false;
+
+    var cfg = u.splitCfg;
+    // талант «Бесконечное деление» разрешает детям поделиться ещё раз
+    var childrenSplit = !!cfg.twice && !u.isChild;
+    for (var i = -1; i <= 1; i += 2) {
+      var child = eidolon(u.owner, cfg,
+        u.x + i * 34, u.y + m.rnd(-20, 20));
+      if (!child) continue;
+      child.isChild = true;
+      child.canSplit = childrenSplit;
+    }
+    AA.Game.effects.ring(u.x, u.y, 70, '#a08aff');
+    u.dead = true;
   }
 
   /** Сколько иллюзий героя сейчас на поле. */
@@ -172,6 +237,7 @@ AA.module('game/factory', (function () {
 
   return {
     hero: hero, enemy: enemy, minion: minion, dummy: dummy,
-    illusion: illusion, countIllusions: countIllusions, dropOldestIllusion: dropOldestIllusion
+    illusion: illusion, countIllusions: countIllusions, dropOldestIllusion: dropOldestIllusion,
+    eidolon: eidolon, splitEidolon: splitEidolon
   };
 })());

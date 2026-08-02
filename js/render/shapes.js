@@ -65,6 +65,10 @@ AA.module('render/shapes', (function () {
     demon: {
       skin: '#b884d8', cloth: '#2a0f3a', armor: '#7a2ab0', trim: '#ff6ad8',
       helm: 'horns', torso: 'leather', weapon: 'twinblades', cape: true, bulk: .96
+    },
+    void: {
+      skin: '#2a2038', cloth: '#1a1030', armor: '#5a3ab0', trim: '#a08aff',
+      helm: 'voidcrown', torso: 'robe', weapon: 'voidorb', cape: true, bulk: .94
     }
   };
 
@@ -756,6 +760,27 @@ AA.module('render/shapes', (function () {
         ctx.fill();
         break;
 
+      case 'voidcrown':                                 // осколки вместо головы
+        ctx.fillStyle = '#0a0812';
+        ctx.beginPath();
+        ctx.ellipse(.6 * s, -19 * s, hr * .82, hr * .9, 0, 0, 6.2832);
+        ctx.fill();
+        ctx.fillStyle = kit.trim;
+        ctx.shadowColor = kit.trim; ctx.shadowBlur = 14;
+        for (var vi = -2; vi <= 2; vi++) {
+          var vh = 27 + Math.abs(vi) * -1.6;
+          ctx.beginPath();
+          ctx.moveTo(.6 * s + vi * 2.6 * s - .8 * s, -24 * s);
+          ctx.lineTo(.6 * s + vi * 2.6 * s, -vh * s);
+          ctx.lineTo(.6 * s + vi * 2.6 * s + .8 * s, -24 * s);
+          ctx.closePath(); ctx.fill();
+        }
+        // два огонька вместо глаз
+        ctx.beginPath(); ctx.arc(-1.4 * s, -19.6 * s, 1.1 * s, 0, 6.2832); ctx.fill();
+        ctx.beginPath(); ctx.arc(2.8 * s, -19.6 * s, 1.1 * s, 0, 6.2832); ctx.fill();
+        ctx.shadowBlur = 0;
+        break;
+
       case 'horns':                                     // демонические рога и грива
         ctx.fillStyle = shadeColor(kit.cloth, 1.6);
         ctx.beginPath();
@@ -967,11 +992,29 @@ AA.module('render/shapes', (function () {
         ctx.beginPath(); ctx.arc(orbX - 1 * s, -1 * s, 1.2 * s, 0, 6.2832); ctx.fill();
         break;
 
+      case 'voidorb':                                   // сфера пустоты на цепи
+        ctx.strokeStyle = 'rgba(160,138,255,.6)';
+        ctx.lineWidth = 1.4 * s;
+        ctx.beginPath();
+        ctx.moveTo(0, 0); ctx.lineTo(11 * s, 0);
+        ctx.stroke();
+        ctx.fillStyle = '#0a0812';
+        ctx.shadowColor = kit.trim; ctx.shadowBlur = 20;
+        ctx.beginPath(); ctx.arc(15 * s, 0, 4.6 * s, 0, 6.2832); ctx.fill();
+        ctx.shadowBlur = 0;
+        // кольцо аккреции
+        ctx.strokeStyle = kit.trim;
+        ctx.lineWidth = 1.6 * s;
+        ctx.beginPath();
+        ctx.ellipse(15 * s, 0, 7 * s, 2.4 * s, t * .8, 0, 6.2832);
+        ctx.stroke();
+        break;
+
       case 'twinblades':                                // изогнутые демонические клинки
-        var meta = !!u.meta;
-        ctx.fillStyle = meta ? kit.trim : '#e0d0f0';
+        var morphed = !!u.morph;
+        ctx.fillStyle = morphed ? kit.trim : '#e0d0f0';
         ctx.shadowColor = kit.trim;
-        ctx.shadowBlur = meta ? 16 : 6;
+        ctx.shadowBlur = morphed ? 16 : 6;
         ctx.beginPath();
         ctx.moveTo(0, -2 * s);
         ctx.quadraticCurveTo(11 * s, -8 * s, 19 * s, -2 * s);
@@ -1012,6 +1055,7 @@ AA.module('render/shapes', (function () {
   function enemy(ctx, u, bodyColor, c2, glow, time) {
     if (u.isBoss) { boss(ctx, u, bodyColor, c2, glow, time); return; }
     if (u.shape === 'e_dummy') { dummy(ctx, u, bodyColor, c2, glow); return; }
+    if (u.shape === 'eidolon') { eidolonShape(ctx, u, bodyColor, c2, glow, time); return; }
 
     var m = M(), r = u.r, t = time || 0, i, a, rr;
     var wob = u.wob || 0;
@@ -1148,6 +1192,43 @@ AA.module('render/shapes', (function () {
         ctx.globalAlpha = 1;
         break;
     }
+  }
+
+  /** Эйдолон: парящий сгусток пустоты с осколками по орбите. */
+  function eidolonShape(ctx, u, c1, c2, glow, t) {
+    var r = u.r, i, a;
+
+    // ядро
+    var g = ctx.createRadialGradient(0, 0, r * .1, 0, 0, r);
+    g.addColorStop(0, glow);
+    g.addColorStop(.5, c1);
+    g.addColorStop(1, c2);
+    ctx.fillStyle = g;
+    ctx.shadowColor = glow; ctx.shadowBlur = 14;
+    ctx.beginPath(); ctx.arc(0, 0, r * .78, 0, 6.2832); ctx.fill();
+    ctx.shadowBlur = 0;
+
+    // осколки по орбите
+    ctx.fillStyle = glow;
+    ctx.globalAlpha = .85;
+    for (i = 0; i < 3; i++) {
+      a = t * 2.2 + i * 2.094 + (u.wob || 0);
+      ctx.save();
+      ctx.translate(Math.cos(a) * r * 1.15, Math.sin(a) * r * .55);
+      ctx.rotate(a);
+      ctx.beginPath();
+      ctx.moveTo(0, -r * .26); ctx.lineTo(r * .16, 0);
+      ctx.lineTo(0, r * .26); ctx.lineTo(-r * .16, 0);
+      ctx.closePath(); ctx.fill();
+      ctx.restore();
+    }
+    ctx.globalAlpha = 1;
+
+    // глаз-щель
+    ctx.fillStyle = '#0a0812';
+    ctx.beginPath();
+    ctx.ellipse(r * .18, 0, r * .3, r * .12, 0, 0, 6.2832);
+    ctx.fill();
   }
 
   function dummy(ctx, u, c1, c2, glow) {

@@ -25,6 +25,8 @@ AA.module('game/abilities', (function () {
     if (lv < 0) { toast('Умение не изучено'); return false; }
     if (sk.type === 'passive') return false;
     if (AA.Game.buffs.isStunned(u)) return false;
+    // во время канала герой занят и колдовать не может
+    if (AA.Game.buffs.has(u, 'channel')) { toast('Идёт канал'); return false; }
 
     // стихии Аркана бесплатны и без перезарядки — они лишь набирают связку
     if (sk.type === 'reagent') {

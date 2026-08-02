@@ -53,6 +53,7 @@ AA.module('game/terrain', (function () {
         var spot = findSpot(rand, r, c);
         if (!spot) continue;
         var prop = {
+          isProp: true,           // по нему рендер отличает ландшафт от юнитов
           type: type, x: spot.x, y: spot.y, r: r, meta: meta,
           rot: rand() * 6.2832, seed: rand(), sway: rand() * 6.2832
         };

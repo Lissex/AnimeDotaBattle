@@ -75,6 +75,15 @@ AA.module('content/heroes', (function () {
       skills: ['elemFire', 'elemIce', 'elemStorm', 'arcana']
     },
     {
+      id: 'enigma', name: 'Зодчий Пустоты', role: 'МАГ · КОНТРОЛЬ И ПРИЗЫВ', cost: 3600,
+      shape: 'void', anim: 'orbit', c1: '#7a5ae8', c2: '#1a1030', primary: 'int',
+      tip: 'Держит толпу проклятием, давит эйдолонами и решает бой чёрной дырой. ' +
+        'Само пространство вокруг него замедляет врагов.',
+      attr: { str: 19, agi: 14, int: 21 }, gain: { str: 2.5, agi: 1.0, int: 3.6 },
+      base: { atk: 25, armor: 0, ms: 300, as: .58, range: 500, mr: .30 },
+      skills: ['curse', 'sacrifice', 'singularity', 'gravity']
+    },
+    {
       id: 'pyro', name: 'Пиромант', role: 'МАГ · УРОН ПО ВРЕМЕНИ', cost: 3400,
       shape: 'pyro', anim: 'flame', c1: '#ff5a2f', c2: '#5a1c06', primary: 'int',
       tip: 'Поджигает толпу и дожигает её, пока сам держится в стороне.',

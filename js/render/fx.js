@@ -29,6 +29,31 @@ AA.module('render/fx', (function () {
       ctx.beginPath(); ctx.arc(z.x, z.y, z.r, 0, 6.2832); ctx.stroke();
       ctx.setLineDash([]);
 
+      if (z.style === 'hole') {
+        // чёрная дыра: тёмное ядро и закрученные нити
+        ctx.globalAlpha = .9 * fade;
+        var core = ctx.createRadialGradient(z.x, z.y, 2, z.x, z.y, z.r * .45);
+        core.addColorStop(0, '#000000');
+        core.addColorStop(.7, 'rgba(10,6,24,.85)');
+        core.addColorStop(1, 'rgba(0,0,0,0)');
+        ctx.fillStyle = core;
+        ctx.beginPath(); ctx.arc(z.x, z.y, z.r * .45, 0, 6.2832); ctx.fill();
+
+        ctx.strokeStyle = z.c; ctx.lineWidth = 2;
+        ctx.globalAlpha = .7 * fade;
+        for (s = 0; s < 5; s++) {
+          ctx.beginPath();
+          for (var q = 0; q <= 18; q++) {
+            var tt = q / 18;
+            var ang = s * 1.256 + w.time * 2.4 + tt * 3.4;
+            var rad = z.r * (1 - tt * .92);
+            var px = z.x + Math.cos(ang) * rad, py = z.y + Math.sin(ang) * rad;
+            if (q === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+          }
+          ctx.stroke();
+        }
+      }
+
       if (z.style === 'thorn') {
         ctx.globalAlpha = .8 * fade; ctx.lineWidth = 2;
         for (s = 0; s < 12; s++) {

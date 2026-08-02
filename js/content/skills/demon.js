@@ -82,9 +82,18 @@
           if (!c) break;
           c.x = u.x + Math.cos(i * 3.14) * 60;
           c.y = u.y + Math.sin(i * 3.14) * 60;
-          c.meta = !!a.hasBuff(u, 'metamorph');
           AA.Game.world.confine(c);
-          if (c.meta) applyMeta(c, a.hasBuff(u, 'metamorph'));
+
+          // копия рождается уже в той форме, в какой сейчас оригинал
+          var active = a.hasBuff(u, 'metamorph');
+          if (active) {
+            a.buff(c, {
+              id: 'metamorph', dur: active.t, atk: active.atk, range: active.range,
+              ms: 30, color: '#d84a2a', glow: '#d84a2a', morph: true
+            });
+            c.morph = true;
+            AA.Game.stats.recalc(c);
+          }
         }
         a.ring(u.x, u.y, 120, '#6a8ae8');
         return true;
@@ -107,13 +116,13 @@
         var a = g(), self = this;
         var dur = self.dur[l] * (a.shard(u) ? 1.35 : 1);
 
-        var buff = {
-          id: 'metamorph', dur: dur,
-          atk: self.atk[l], range: self.range,
-          color: '#d84a2a', glow: '#d84a2a', meta: true
-        };
-        a.buff(u, buff);
-        applyMeta(u, buff);
+        var bonus = self.atk[l] * (a.talent(u, 'dm_meta_dmg') ? 2 : 1);
+        a.buff(u, {
+          id: 'metamorph', dur: dur, atk: bonus, range: self.range,
+          color: '#d84a2a', glow: '#d84a2a', morph: true
+        });
+        u.morph = true;
+        AA.Game.stats.recalc(u);
 
         // копии переходят в ту же форму
         var w = AA.Game.world.state;
@@ -121,10 +130,11 @@
           var c = w.units[i];
           if (c.dead || !c.isIllusion || c.lockTarget) continue;
           a.buff(c, {
-            id: 'metamorph', dur: dur, atk: self.atk[l], range: self.range,
-            ms: 30, color: '#d84a2a', glow: '#d84a2a', meta: true
+            id: 'metamorph', dur: dur, atk: bonus, range: self.range,
+            ms: 30, color: '#d84a2a', glow: '#d84a2a', morph: true
           });
-          applyMeta(c, buff);
+          c.morph = true;
+          AA.Game.stats.recalc(c);
         }
 
         a.ring(u.x, u.y, 170, '#d84a2a');
@@ -181,11 +191,5 @@
     var lv = (u.skillLv.sunder || 0) - 1;
     if (lv < 0) return 0;
     return S.get('sunder').bonus[lv] / 100;
-  }
-
-  /** Метаморфоза меняет тип атаки: ближний бой становится дальним. */
-  function applyMeta(unit, buff) {
-    unit.meta = true;
-    unit.metaUntil = buff.dur;
   }
 })();

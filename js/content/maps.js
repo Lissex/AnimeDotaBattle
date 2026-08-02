@@ -70,6 +70,14 @@ AA.module('content/maps', (function () {
         ['crack', 8]
       ]
     },
+    enigma: {
+      name: 'Провал Мироздания', floor: '#181430', floor2: '#060410', accent: '#7a5ae8',
+      tint: 'rgba(80,60,180,.15)', weather: 'void',
+      props: [
+        ['obelisk', 6], ['crystal', 6], ['ruin', 5], ['pillar', 4],
+        ['crack', 10]
+      ]
+    },
     pyro: {
       name: 'Вулканический кратер', floor: '#2e1a12', floor2: '#120806', accent: '#ff7a2f',
       tint: 'rgba(180,70,20,.16)', weather: 'ash',
@@ -104,7 +112,7 @@ AA.module('content/maps', (function () {
   /** Порядок смены арен после каждого босса. Полигон не участвует. */
   var ROTATION = [
     'butcher', 'ranger', 'berserk', 'frost', 'knight',
-    'shadow', 'dryad', 'arcanist', 'demon', 'pyro', 'golem'
+    'shadow', 'dryad', 'arcanist', 'demon', 'enigma', 'pyro', 'golem'
   ];
 
   return {

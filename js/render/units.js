@@ -24,6 +24,8 @@ AA.module('render/units', (function () {
     ctx.globalAlpha = B().isInvisible(u) ? (isHero ? .3 : .25) : 1;
     // копии полупрозрачные — чтобы не путать их с оригиналом
     if (u.isIllusion) ctx.globalAlpha *= u.invuln ? .5 : .72;
+    // эйдолоны рисуются как враги, но принадлежат игроку
+    if (u.isEidolon) isHero = false;
 
     if (u.isBoss) bossAura(ctx, u, y, m);
     buffGlow(ctx, u, y, m);
@@ -33,6 +35,12 @@ AA.module('render/units', (function () {
     ctx.translate(u.x + Math.cos(u.face) * kick, y + Math.sin(u.face) * kick);
 
     if (isHero) {
+      // в Метаморфозе фигура крупнее — превращение видно, а не только в цифрах
+      if (u.morph) {
+        ctx.scale(1.22, 1.22);
+        morphWings(ctx, u, w.time);
+      }
+
       // корпус стоит прямо: наклон при беге и вращение от умений вроде «Вихря»
       var lean = (u.vx || u.vy) ? prof.lean * Math.sin(u.step * prof.bobF * 2) * .5 : 0;
       var spin = u.spin || 0;
@@ -111,6 +119,31 @@ AA.module('render/units', (function () {
 
     if (B().has(u, 'venom')) emit(u, '#7ac043');
     if (B().has(u, 'ignite')) emit(u, '#ffb03a');
+  }
+
+  /** Крылья дальнобойной формы — рисуются за спиной до самой фигуры. */
+  function morphWings(ctx, u, t) {
+    var r = u.r, flap = Math.sin(t * 3) * .16;
+    ctx.save();
+    ctx.globalAlpha = .8;
+    ctx.fillStyle = u.c2;
+    ctx.shadowColor = '#d84a2a';
+    ctx.shadowBlur = 14;
+
+    for (var s = -1; s <= 1; s += 2) {
+      ctx.save();
+      ctx.scale(s, 1);
+      ctx.rotate(flap * s);
+      ctx.beginPath();
+      ctx.moveTo(r * .2, -r * .5);
+      ctx.quadraticCurveTo(r * 1.5, -r * 1.4, r * 1.75, -r * .2);
+      ctx.quadraticCurveTo(r * 1.1, -r * .35, r * .95, r * .45);
+      ctx.quadraticCurveTo(r * .6, -r * .1, r * .2, -r * .5);
+      ctx.fill();
+      ctx.restore();
+    }
+    ctx.shadowBlur = 0;
+    ctx.restore();
   }
 
   /** Метка копии: пунктирный контур и подпись у неуязвимой. */

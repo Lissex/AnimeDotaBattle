@@ -115,6 +115,18 @@ AA.module('content/skins', (function () {
         fx: 'runes', fxColor: '#c9a0ff', aura: 'rgba(201,160,255,.18)'
       }
     ],
+    enigma: [
+      { id: 'default', name: 'Зодчий Пустоты', tier: 0, cost: 0 },
+      {
+        id: 'eventhorizon', name: 'Горизонт Событий', tier: 1, cost: 2200,
+        palette: { skin: '#3a2f50', cloth: '#120a28', armor: '#7a4ad8', trim: '#c8b0ff' }
+      },
+      {
+        id: 'collapse', name: 'ИММОРТАЛ · Коллапс', tier: 2, ad: true,
+        palette: { skin: '#4a3a70', cloth: '#08040f', armor: '#a02aff', trim: '#e0c0ff' },
+        fx: 'runes', fxColor: '#c08aff', aura: 'rgba(192,138,255,.2)'
+      }
+    ],
     pyro: [
       { id: 'default', name: 'Пиромант', tier: 0, cost: 0 },
       {

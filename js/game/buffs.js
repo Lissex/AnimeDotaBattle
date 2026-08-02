@@ -49,7 +49,7 @@ AA.module('game/buffs', (function () {
       if (b.spin) u.spin += dt * 15;
       if (u.dead) return;
       if (b.t <= 0) {
-        if (b.meta) u.meta = false;      // метаморфоза кончилась
+        if (b.morph) u.morph = false;    // метаморфоза кончилась
         u.buffs.splice(i, 1);
         AA.Game.stats.recalc(u);
       }

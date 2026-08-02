@@ -78,9 +78,10 @@ AA.module('game/loop', (function () {
         AA.Game.ai.enemy(u, dt);
         if (u.isBoss && !B.isStunned(u)) AA.Game.ai.bossAbility(u, dt);
         if (u.dead) continue;
-      } else if (u.isIllusion) {
+      } else if (u.isIllusion || u.isEidolon) {
         AA.Game.ai.illusion(u, dt);
-        if (!updateIllusionLife(u, dt)) continue;
+        if (!updateSummonLife(u, dt)) continue;
+        if (u.auraSlow) applySlowAura(u, dt);
       }
 
       if (u.leap) {
@@ -111,17 +112,28 @@ AA.module('game/loop', (function () {
     }
   }
 
-  /** Срок жизни копии. @returns {boolean} жива ли она дальше */
-  function updateIllusionLife(u, dt) {
+  /** Срок жизни копии или эйдолона. @returns {boolean} жив ли дальше */
+  function updateSummonLife(u, dt) {
     u.life -= dt;
 
     // копия из Отражения держится, только пока жив оригинал
     if (u.guard && u.guard.dead) u.life = Math.min(u.life, 0);
 
     if (u.life > 0) return true;
-    AA.Game.effects.burst(u.x, u.y, '#8ab0ff', 12);
+    AA.Game.effects.burst(u.x, u.y, u.isEidolon ? '#a08aff' : '#8ab0ff', 12);
     u.dead = true;
     return false;
+  }
+
+  /** Поле замедления вокруг эйдолона — то же, что у хозяина. */
+  function applySlowAura(u, dt) {
+    var fx = AA.Game.effects;
+    fx.aura(u, u.auraR, 'rgba(122,90,232,.07)');
+    AA.Game.targeting.forEachEnemy(u, u.auraR, function (e) {
+      AA.Game.buffs.add(e, {
+        id: 'gravity', dur: .4, msMul: 1 - u.auraSlow / 100, quiet: true
+      });
+    });
   }
 
   function footsteps(u, dt) {

@@ -74,7 +74,10 @@ AA.module('render/renderer', (function () {
     }
     list.sort(byY);
     for (i = 0; i < list.length; i++) {
-      if (list[i].meta) AA.Render.props.draw(list[i]);
+      // разделяем по явному флагу: раньше проверяли поле meta, но
+      // его же завёл себе юнит в Метаморфозе — и герой пропадал,
+      // потому что рендер принимал его за объект ландшафта
+      if (list[i].isProp) AA.Render.props.draw(list[i]);
       else AA.Render.units.draw(list[i]);
     }
   }

@@ -100,7 +100,7 @@ AA.module('game/stats', (function () {
 
     /* ---------- лимиты ---------- */
     // метаморфоза меняет тип атаки: ближний бой становится дальним
-    if (u.meta && u.base && u.base.range < 150) s.range = Math.max(s.range, 530);
+    if (u.morph && u.base && u.base.range < 150) s.range = Math.max(s.range, 530);
 
     // талант «Живые копии» уменьшает лишний урон по иллюзиям
     if (u.isIllusion && u.takenMul > 1 && AA.Game.talents.has(W_hero(), 'dm_illu_dmg')) {

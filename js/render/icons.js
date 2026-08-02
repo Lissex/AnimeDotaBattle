@@ -381,7 +381,9 @@ AA.module('render/icons', (function () {
     /* --- Голем --- */
     slam: 'fist', quake: 'rock', boulder: 'rock', stoneskin: 'shield',
     /* --- Демон Клинков --- */
-    reflection: 'mask', splinter: 'spiral', metamorph: 'wing', sunder: 'clock'
+    reflection: 'mask', splinter: 'spiral', metamorph: 'wing', sunder: 'clock',
+    /* --- Зодчий Пустоты --- */
+    curse: 'ring', sacrifice: 'skull', singularity: 'spiral', gravity: 'swirl'
   };
 
   /* ------------------------------------------------------------

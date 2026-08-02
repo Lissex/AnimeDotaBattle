@@ -275,6 +275,12 @@ AA.module('game/combat', (function () {
 
       // эффект имморталки — только визуал, урона не добавляет
       if (u === W().hero) AA.Game.skinfx.onHit(u, target);
+
+      // эйдолон делится надвое после серии атак
+      if (u.isEidolon && u.canSplit) {
+        u.hits++;
+        if (u.hits >= u.splitAt) AA.Game.factory.splitEidolon(u);
+      }
     };
   }
 
