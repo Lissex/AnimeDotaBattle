@@ -26,7 +26,9 @@ AA.module('render/units', (function () {
     if (u.isBoss) bossAura(ctx, u, y, m);
     buffGlow(ctx, u, y, m);
 
-    ctx.translate(u.x, y);
+    // отдача после выстрела — корпус чуть отходит назад
+    var kick = u.recoilT ? -(u.recoilT / .12) * 4 : 0;
+    ctx.translate(u.x + Math.cos(u.face) * kick, y + Math.sin(u.face) * kick);
 
     if (isHero) {
       // корпус стоит прямо: наклон при беге и вращение от умений вроде «Вихря»
@@ -255,7 +257,92 @@ AA.module('render/units', (function () {
         break;
     }
 
+    skinFx(ctx, u, r, m, w);
     if (u.castFx > 0) castFlash(ctx, u.castFx, r);
+  }
+
+  /* ---------------- эффекты имморталок ---------------- */
+  // Приятные, но не мешающие читаемости: аура под ногами и частицы.
+  function skinFx(ctx, u, r, m, w) {
+    var skin = u.skin;
+    if (!skin || !skin.fx) return;
+    var t = w.time, i, a;
+
+    if (skin.aura) {
+      var g = ctx.createRadialGradient(0, r * .6, r * .2, 0, r * .6, r * 2);
+      g.addColorStop(0, skin.aura);
+      g.addColorStop(1, 'rgba(0,0,0,0)');
+      ctx.fillStyle = g;
+      ctx.beginPath(); ctx.ellipse(0, r * .6, r * 2, r * .8, 0, 0, 6.2832); ctx.fill();
+    }
+
+    switch (skin.fx) {
+      case 'trail':                                   // шлейф за оружием
+        if (u.swing > 0) {
+          ctx.save();
+          ctx.globalCompositeOperation = 'lighter';
+          ctx.globalAlpha = u.swing / AA.Render.anim.SWING_TIME * .7;
+          ctx.strokeStyle = skin.fxColor;
+          ctx.lineWidth = 4;
+          ctx.beginPath();
+          ctx.arc(0, -r * .3, r * 1.5, -1.1, 1.1);
+          ctx.stroke();
+          ctx.restore();
+        }
+        break;
+
+      case 'embers':                                  // искры вверх
+        if (Math.random() < .35) {
+          w.parts.push({
+            x: u.x + m.rnd(-r, r), y: u.y + m.rnd(-r * .4, r * .6),
+            vx: m.rnd(-12, 12), vy: m.rnd(-56, -22),
+            c: skin.fxColor, r: 1.9, t: 0, life: .7
+          });
+        }
+        break;
+
+      case 'frost':                                   // морозная дымка
+        ctx.save();
+        ctx.globalAlpha = .35 + Math.sin(t * 2) * .12;
+        ctx.strokeStyle = skin.fxColor;
+        ctx.lineWidth = 1.4;
+        for (i = 0; i < 3; i++) {
+          a = t * .8 + i * 2.094;
+          ctx.beginPath();
+          ctx.ellipse(0, -r * .2, r * (1.1 + i * .2), r * .38, a, 0, 6.2832);
+          ctx.stroke();
+        }
+        ctx.restore();
+        break;
+
+      case 'runes':                                   // вращающиеся руны
+        ctx.save();
+        ctx.globalAlpha = .75;
+        ctx.fillStyle = skin.fxColor;
+        ctx.font = '900 ' + Math.round(r * .42) + 'px "Trebuchet MS",sans-serif';
+        ctx.textAlign = 'center';
+        var glyphs = ['✦', '✧', '❖', '✜'];
+        for (i = 0; i < 4; i++) {
+          a = t * 1.1 + i * 1.5708;
+          ctx.fillText(glyphs[i], Math.cos(a) * r * 1.9, Math.sin(a) * r * .7 - r * .3);
+        }
+        ctx.restore();
+        break;
+
+      case 'storm':                                   // разряды по корпусу
+        if (Math.random() < .25) {
+          ctx.save();
+          ctx.globalCompositeOperation = 'lighter';
+          ctx.strokeStyle = skin.fxColor;
+          ctx.lineWidth = 1.8;
+          ctx.beginPath();
+          ctx.moveTo(m.rnd(-r, r), -r);
+          for (i = 0; i < 3; i++) ctx.lineTo(m.rnd(-r, r), -r + i * r * .7);
+          ctx.stroke();
+          ctx.restore();
+        }
+        break;
+    }
   }
 
   function castFlash(ctx, k, r) {

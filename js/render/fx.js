@@ -237,6 +237,68 @@ AA.module('render/fx', (function () {
     }
   }
 
+  /** Дуга ближнего удара: три следа с затуханием — читается как замах. */
+  function swipes() {
+    var ctx = C(), w = W();
+    for (var i = 0; i < w.swipes.length; i++) {
+      var s = w.swipes[i], k = s.t / s.life;
+      var u = s.unit;
+      if (!u || u.dead) continue;
+
+      // дуга проходит от начала замаха к концу
+      var span = s.arc;
+      var head = s.a - span * .5 + span * k;
+
+      ctx.save();
+      ctx.translate(u.x, u.y);
+      ctx.lineCap = 'round';
+      for (var g = 0; g < 3; g++) {
+        var back = g * .22;
+        ctx.globalAlpha = (1 - k) * (.55 - g * .16);
+        ctx.strokeStyle = g === 0 ? '#ffffff' : s.c;
+        ctx.lineWidth = (7 - g * 2) * (1 - k * .5);
+        ctx.beginPath();
+        ctx.arc(0, 0, s.r * (1 - g * .06), head - back - .34, head - back);
+        ctx.stroke();
+      }
+      // остриё дуги
+      ctx.globalAlpha = (1 - k) * .9;
+      ctx.fillStyle = '#ffffff';
+      ctx.beginPath();
+      ctx.arc(Math.cos(head) * s.r, Math.sin(head) * s.r, 3.4 * (1 - k), 0, 6.2832);
+      ctx.fill();
+      ctx.restore();
+      ctx.globalAlpha = 1;
+    }
+  }
+
+  /** Вспышка выстрела: короткий конус у оружия. */
+  function muzzles() {
+    var ctx = C(), w = W();
+    for (var i = 0; i < w.muzzles.length; i++) {
+      var m0 = w.muzzles[i], k = m0.t / m0.life;
+      ctx.save();
+      ctx.globalCompositeOperation = 'lighter';
+      ctx.globalAlpha = 1 - k;
+      ctx.translate(m0.x, m0.y);
+      ctx.rotate(m0.a);
+      var len = 26 * (1 - k * .5);
+      var g = ctx.createLinearGradient(0, 0, len, 0);
+      g.addColorStop(0, '#ffffff');
+      g.addColorStop(.4, m0.c);
+      g.addColorStop(1, 'rgba(0,0,0,0)');
+      ctx.fillStyle = g;
+      ctx.beginPath();
+      ctx.moveTo(0, -7 * (1 - k));
+      ctx.lineTo(len, 0);
+      ctx.lineTo(0, 7 * (1 - k));
+      ctx.closePath();
+      ctx.fill();
+      ctx.restore();
+      ctx.globalAlpha = 1;
+    }
+  }
+
   function slashes() {
     var ctx = C(), w = W();
     ctx.lineCap = 'round';
@@ -456,7 +518,7 @@ AA.module('render/fx', (function () {
   return {
     zones: zones, runes: runes, auras: auras, corpses: corpses, telegraphs: telegraphs,
     rings: rings, cones: cones, lights: lights, weather: weather,
-    bolts: bolts, pillars: pillars, slashes: slashes,
+    bolts: bolts, pillars: pillars, slashes: slashes, swipes: swipes, muzzles: muzzles,
     projectiles: projectiles, particles: particles, numbers: numbers,
     resetWeather: function () { flakes = []; flakeMode = null; }
   };

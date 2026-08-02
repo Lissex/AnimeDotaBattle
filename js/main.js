@@ -104,13 +104,13 @@
       // интерфейс
       var save = AA.Platform.storage.data;
       AA.UI.menu.bind();
+      AA.UI.settings.bind();
       AA.UI.shop.bind();
       AA.UI.skilltree.bind();
+      AA.UI.comic.bind();
       AA.UI.training.bind();
       AA.UI.controls.bind();
 
-      document.getElementById('opt-sound').checked = save.sound !== false;
-      document.getElementById('opt-shake').checked = save.shake !== false;
       AA.Core.audio.set(save.sound !== false);
       AA.Game.effects.setShake(save.shake !== false);
 

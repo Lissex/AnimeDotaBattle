@@ -47,6 +47,7 @@ AA.module('ui/hud', (function () {
     if (full) {
       d.$('hud-hname').textContent = d.t(h.name);
       d.$('hud-map').textContent = w.map ? w.map.name : '';
+      renderPortrait(h);
       renderItems();
     }
 
@@ -101,6 +102,19 @@ AA.module('ui/hud', (function () {
     }, 4200);
   }
 
+  /** Портрет в панели — с учётом выбранного скина. */
+  function renderPortrait(h) {
+    var d = D(), box = d.$('dh-portrait');
+    var def = AA.Content.heroes.get(h.defId);
+    var view = {
+      shape: def.shape, anim: def.anim,
+      c1: (h.skin && h.skin.palette && h.skin.palette.armor) || def.c1,
+      c2: (h.skin && h.skin.palette && h.skin.palette.cloth) || def.c2
+    };
+    box.innerHTML = '';
+    box.appendChild(AA.Render.portrait.element(74, view, h.skin));
+  }
+
   function renderItems() {
     var d = D(), box = d.$('hud-items'), h = W().hero;
     var R = AA.Content.items.RARITY;
@@ -138,7 +152,16 @@ AA.module('ui/hud', (function () {
 
     if (w.auto) { AA.UI.skilltree.autoAssign(true); AA.UI.shop.autoBuy(true); }
 
-    var go = function () { AA.UI.shop.open(); };
+    // босс повержен — ставим главу истории в очередь
+    var A = AA.Content.attributes;
+    if (A.isBossWave(wave)) AA.UI.comic.queue(A.bossIndex(wave));
+
+    var go = function () {
+      // сначала талант, если дорос, затем комикс, затем лавка
+      if (AA.UI.talents.checkPending()) return;
+      if (AA.UI.comic.flush()) return;
+      AA.UI.shop.open();
+    };
     // п.4.4: полноэкранная реклама только в логической паузе
     if (wave >= 2 && wave % 3 === 0) AA.Platform.sdk.interstitial(go);
     else go();

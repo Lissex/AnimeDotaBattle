@@ -92,12 +92,83 @@ AA.module('ui/heroes', (function () {
     });
     box.appendChild(grid);
 
+    /* облики */
+    if (open_) box.appendChild(skinRow(h));
+
     /* умения */
     box.appendChild(skillList(h));
     if (h.invoker) box.appendChild(AA.UI.skilltree.comboTable());
 
     /* кнопки */
     box.appendChild(footer(h, open_, lv));
+  }
+
+  /* ---------------- облики ----------------
+     Дефолт скромный, покупной за души, имморталка за рекламу. */
+  function skinRow(hero) {
+    var d = D(), S = AA.Content.skins;
+    var save = d.save();
+    var current = save.skins[hero.id] || 'default';
+
+    var row = d.el('div', 'skin-row', '<div class="skin-head">ОБЛИКИ</div>');
+    var list = d.el('div', 'skin-list');
+
+    S.listFor(hero.id).forEach(function (skin) {
+      var key = S.key(hero.id, skin.id);
+      var owned = skin.tier === 0 || d.isDev() || save.ownedSkins.indexOf(key) >= 0;
+
+      var card = d.el('div',
+        'skin-card skin-t' + skin.tier +
+        (current === skin.id ? ' on' : '') + (owned ? '' : ' locked'));
+
+      var prev = d.el('div', 'skin-preview');
+      prev.appendChild(AA.Render.portrait.element(52, hero, skin));
+      card.appendChild(prev);
+
+      card.appendChild(d.el('b', null, skin.name));
+
+      var label;
+      if (owned) label = current === skin.id ? 'НАДЕТ' : 'НАДЕТЬ';
+      else if (skin.ad) label = 'ЗА РЕКЛАМУ';
+      else label = d.fmt(skin.cost) + ' ♦';
+      card.appendChild(d.el('small', null, label));
+
+      card.onclick = function () { pickSkin(hero, skin, owned); };
+      list.appendChild(card);
+    });
+
+    row.appendChild(list);
+    return row;
+  }
+
+  function pickSkin(hero, skin, owned) {
+    var d = D(), S = AA.Content.skins, save = d.save();
+    var key = S.key(hero.id, skin.id);
+
+    function equip() {
+      save.skins[hero.id] = skin.id;
+      AA.Platform.storage.commit(true);
+      AA.Core.audio.buy();
+      renderDetail();
+    }
+
+    if (owned) { equip(); return; }
+
+    if (skin.ad) {
+      if (!AA.Platform.sdk.hasAds()) { AA.UI.toast.show('Реклама недоступна'); return; }
+      AA.Platform.sdk.rewarded(function () {
+        save.ownedSkins.push(key);
+        equip();
+        AA.UI.toast.show('Открыт облик: ' + skin.name);
+      }, function (ok) { if (!ok) AA.UI.toast.show('Реклама недоступна'); });
+      return;
+    }
+
+    if (!d.spendSouls(skin.cost)) { AA.UI.toast.show('Не хватает душ'); return; }
+    save.ownedSkins.push(key);
+    equip();
+    AA.UI.menu.refresh();
+    AA.UI.toast.show('Открыт облик: ' + skin.name);
   }
 
   function skillList(h) {

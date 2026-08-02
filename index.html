@@ -63,39 +63,27 @@
     <canvas id="cv"></canvas>
 
     <div class="battle-hud">
+      <!-- верхняя строка -->
       <div class="bh-top">
         <div class="bh-wave" id="bh-wave">ВОЛНА <b id="hud-wave">1</b></div>
-        <div class="bh-gold"><span class="ic ic-gold"></span><b id="hud-gold">0</b></div>
         <div class="bh-map" id="hud-map"></div>
         <button class="chip" id="btn-auto">АВТО: ВЫКЛ</button>
         <button class="chip" id="btn-pause" aria-label="Пауза">II</button>
       </div>
 
-      <div class="bh-player">
-        <div class="pp-name">
-          <b id="hud-hname">—</b>
-          <span class="lvl">ур. <b id="hud-hlvl">1</b></span>
-          <span class="pts-dot" id="hud-skillpts" style="display:none">0</span>
-        </div>
-        <div class="bar bar-hp"><i id="hud-hp"></i><span id="hud-hp-txt"></span></div>
-        <div class="bar bar-mp"><i id="hud-mp"></i><span id="hud-mp-txt"></span></div>
-        <div class="bar bar-xp"><i id="hud-xp"></i></div>
-      </div>
-
-      <div class="bh-items" id="hud-items"></div>
-
-      <!-- полоса здоровья текущего босса -->
+      <!-- полоса здоровья босса -->
       <div class="boss-hud" id="boss-hud" style="display:none">
         <div class="boss-name" id="boss-name"></div>
         <div class="boss-bar"><i id="boss-hp"></i></div>
       </div>
 
-      <!-- представление босса при появлении -->
+      <!-- представление босса -->
       <div class="boss-banner" id="boss-banner" style="display:none">
         <div class="bb-title" id="bb-title"></div>
         <div class="bb-concept" id="bb-concept"></div>
       </div>
 
+      <!-- панель полигона -->
       <div class="train-panel" id="train-panel" style="display:none">
         <div class="tr-dps">УРОН В СЕК: <b id="hud-dps">0</b></div>
         <div class="tr-btns">
@@ -106,22 +94,48 @@
           <button class="chip" id="tr-skills">УМЕНИЯ</button>
         </div>
       </div>
+
+      <!-- ===== нижняя панель в стиле Dota ===== -->
+      <div class="dota-hud" id="dota-hud">
+
+        <div class="dh-hero">
+          <div class="dh-portrait" id="dh-portrait"></div>
+          <div class="dh-lvl" id="hud-hlvl">1</div>
+        </div>
+
+        <div class="dh-core">
+          <div class="dh-name">
+            <b id="hud-hname">—</b>
+            <span class="pts-dot" id="hud-skillpts" style="display:none">0</span>
+          </div>
+          <div class="bar bar-hp"><i id="hud-hp"></i><span id="hud-hp-txt"></span></div>
+          <div class="bar bar-mp"><i id="hud-mp"></i><span id="hud-mp-txt"></span></div>
+          <div class="bar bar-xp"><i id="hud-xp"></i></div>
+
+          <!-- связка реагентов Аркана -->
+          <div class="reagent-bar" id="reagent-bar" style="display:none">
+            <div class="rg-slots">
+              <div class="rg-slot"></div>
+              <div class="rg-slot"></div>
+              <div class="rg-slot"></div>
+            </div>
+            <div class="rg-name" id="rg-name">выберите 3 стихии</div>
+          </div>
+
+          <div class="skillbar" id="skillbar"></div>
+        </div>
+
+        <div class="dh-side">
+          <div class="dh-gold"><span class="ic ic-gold"></span><b id="hud-gold">0</b></div>
+          <div class="bh-items" id="hud-items"></div>
+        </div>
+
+      </div>
     </div>
 
     <div class="mob-ctl" id="mob-ctl">
       <div class="stick" id="stick"><i id="stick-knob"></i></div>
     </div>
-
-    <div class="reagent-bar" id="reagent-bar" style="display:none">
-      <div class="rg-slots">
-        <div class="rg-slot"></div>
-        <div class="rg-slot"></div>
-        <div class="rg-slot"></div>
-      </div>
-      <div class="rg-name" id="rg-name">выберите 3 стихии</div>
-    </div>
-
-    <div class="skillbar" id="skillbar"></div>
   </div>
 
   <!-- ======================= ЛАВКА ======================= -->
@@ -167,16 +181,54 @@
     </div>
   </div>
 
+  <!-- ======================= ТАЛАНТ ======================= -->
+  <div id="scr-talent" class="screen overlay">
+    <div class="panel panel-sm">
+      <div class="panel-head"><h2>ВЫБОР ТАЛАНТА</h2><div class="pts" id="talent-tier"></div></div>
+      <div class="talent-options" id="talent-options"></div>
+    </div>
+  </div>
+
+  <!-- ======================= КОМИКС ======================= -->
+  <div id="scr-comic" class="screen overlay">
+    <div class="panel panel-wide comic-panel-wrap">
+      <div class="panel-head"><h2 id="comic-title">ГЛАВА</h2></div>
+      <div class="comic-body" id="comic-panels"></div>
+      <div class="panel-foot">
+        <button class="btn btn-main" id="btn-comic-close">ДАЛЬШЕ</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======================= НАСТРОЙКИ ======================= -->
+  <div id="scr-settings" class="screen overlay">
+    <div class="panel panel-sm">
+      <div class="panel-head"><h2>НАСТРОЙКИ</h2></div>
+      <div class="settings-body">
+        <label class="switch"><input type="checkbox" id="set-sound" checked><span></span>Звук</label>
+        <label class="switch"><input type="checkbox" id="set-shake" checked><span></span>Тряска экрана</label>
+        <label class="switch"><input type="checkbox" id="set-numbers" checked><span></span>Числа урона</label>
+
+        <div class="set-sep" id="set-mode-row">
+          <label class="switch"><input type="checkbox" id="set-game-mode"><span></span>Игровой режим</label>
+          <p class="set-hint" id="set-mode-hint"></p>
+        </div>
+
+        <button class="btn btn-ghost btn-reset" id="btn-reset">СБРОСИТЬ ПРОГРЕСС</button>
+      </div>
+      <div class="panel-foot">
+        <button class="btn btn-main" id="btn-settings-close">ГОТОВО</button>
+      </div>
+    </div>
+  </div>
+
   <!-- ======================= ПАУЗА ======================= -->
   <div id="scr-pause" class="screen overlay">
     <div class="panel panel-sm">
       <div class="panel-head"><h2>ПАУЗА</h2></div>
-      <div class="pause-body">
-        <label class="switch"><input type="checkbox" id="opt-sound" checked><span></span>Звук</label>
-        <label class="switch"><input type="checkbox" id="opt-shake" checked><span></span>Тряска экрана</label>
-      </div>
       <div class="panel-foot col">
         <button class="btn btn-main" id="btn-resume">ПРОДОЛЖИТЬ</button>
+        <button class="btn" id="btn-pause-settings">НАСТРОЙКИ</button>
         <button class="btn btn-ghost" id="btn-quit">СДАТЬСЯ</button>
       </div>
     </div>
@@ -214,27 +266,30 @@
 
 <!-- =========================================================
      МАНИФЕСТ ПОДКЛЮЧЕНИЯ
-     Порядок = порядок слоёв. Файл может обращаться только
-     к слоям ниже себя, и только внутри функций.
+     Порядок = порядок слоёв. Файл обращается только к слоям
+     ниже себя и только внутри функций. Проверка: AA.list()
      ========================================================= -->
 
-<!-- core: неймспейс и утилиты -->
+<!-- core -->
 <script src="js/core/ns.js"></script>
 <script src="js/core/math.js"></script>
 <script src="js/core/audio.js"></script>
 <script src="js/core/input.js"></script>
 
-<!-- platform: SDK Яндекс Игр, сейвы, язык -->
+<!-- platform -->
 <script src="js/platform/i18n.js"></script>
 <script src="js/platform/storage.js"></script>
 <script src="js/platform/sdk.js"></script>
 
-<!-- content: данные -->
+<!-- content -->
 <script src="js/content/attributes.js"></script>
 <script src="js/content/items.js"></script>
 <script src="js/content/enemies.js"></script>
 <script src="js/content/maps.js"></script>
 <script src="js/content/runes.js"></script>
+<script src="js/content/talents.js"></script>
+<script src="js/content/skins.js"></script>
+<script src="js/content/story.js"></script>
 <script src="js/content/skills/registry.js"></script>
 <script src="js/content/skills/melee.js"></script>
 <script src="js/content/skills/ranged.js"></script>
@@ -243,8 +298,9 @@
 <script src="js/content/skills/invoke.js"></script>
 <script src="js/content/heroes.js"></script>
 
-<!-- game: состояние и системы -->
+<!-- game -->
 <script src="js/game/world.js"></script>
+<script src="js/game/talents.js"></script>
 <script src="js/game/stats.js"></script>
 <script src="js/game/buffs.js"></script>
 <script src="js/game/effects.js"></script>
@@ -260,7 +316,7 @@
 <script src="js/game/api.js"></script>
 <script src="js/game/loop.js"></script>
 
-<!-- render: отрисовка -->
+<!-- render -->
 <script src="js/render/canvas.js"></script>
 <script src="js/render/ground.js"></script>
 <script src="js/render/props.js"></script>
@@ -271,16 +327,19 @@
 <script src="js/render/renderer.js"></script>
 <script src="js/render/portrait.js"></script>
 
-<!-- ui: экраны -->
+<!-- ui -->
 <script src="js/ui/dom.js"></script>
 <script src="js/ui/toast.js"></script>
 <script src="js/ui/screens.js"></script>
 <script src="js/ui/menu.js"></script>
+<script src="js/ui/settings.js"></script>
 <script src="js/ui/heroes.js"></script>
 <script src="js/ui/hud.js"></script>
 <script src="js/ui/skillbar.js"></script>
 <script src="js/ui/shop.js"></script>
 <script src="js/ui/skilltree.js"></script>
+<script src="js/ui/talents.js"></script>
+<script src="js/ui/comic.js"></script>
 <script src="js/ui/training.js"></script>
 <script src="js/ui/controls.js"></script>
 

@@ -97,9 +97,19 @@ AA.module('render/shapes', (function () {
   /* ============================================================
                              ГЕРОЙ
      ============================================================ */
+  /** Палитра скина накладывается поверх базового набора. */
+  function kitOf(u) {
+    var base = KITS[u.shape] || KITS.brute;
+    if (!u.skin || !u.skin.palette) return base;
+    var out = {}, k;
+    for (k in base) out[k] = base[k];
+    for (k in u.skin.palette) out[k] = u.skin.palette[k];
+    return out;
+  }
+
   function hero(ctx, u, time) {
     var m = M();
-    var kit = KITS[u.shape] || KITS.brute;
+    var kit = kitOf(u);
     var s = u.r / 22;
     var t = time || 0;
 
@@ -1729,5 +1739,5 @@ AA.module('render/shapes', (function () {
     }
   }
 
-  return { hero: hero, enemy: enemy, KITS: KITS };
+  return { hero: hero, enemy: enemy, KITS: KITS, kitOf: kitOf };
 })());

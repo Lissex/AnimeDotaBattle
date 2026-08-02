@@ -34,10 +34,42 @@
 
 #btn-pause{margin-left:auto;min-width:38px}
 
-/* ---------------- полоски героя ---------------- */
-.bh-player{position:absolute;top:calc(46px + env(safe-area-inset-top));left:10px;width:min(46vw,240px)}
-.pp-name{font-size:12px;font-weight:800;margin-bottom:3px;text-shadow:0 2px 5px #000}
-.pp-name .lvl{color:var(--dim);font-weight:600}
+/* ================================================
+   НИЖНЯЯ ПАНЕЛЬ В СТИЛЕ DOTA
+   Портрет с уровнем · полосы и умения · золото и предметы
+   ================================================ */
+.dota-hud{
+  position:absolute;left:50%;transform:translateX(-50%);
+  bottom:calc(8px + env(safe-area-inset-bottom));
+  display:flex;align-items:flex-end;gap:10px;
+  padding:8px 12px;border-radius:16px;
+  background:linear-gradient(180deg,rgba(16,20,34,.86),rgba(8,10,18,.94));
+  border:1px solid var(--line);
+  box-shadow:0 -6px 30px rgba(0,0,0,.55);
+  pointer-events:auto;z-index:9;
+}
+.dota-hud.dimmed{opacity:.5}
+
+/* --- портрет --- */
+.dh-hero{position:relative;flex:none}
+.dh-portrait{
+  width:74px;height:74px;border-radius:12px;overflow:hidden;
+  border:2px solid var(--acc);background:#0a0d16;
+  box-shadow:0 0 16px rgba(255,122,47,.25);
+}
+.dh-portrait canvas{display:block;width:100%;height:100%}
+.dh-lvl{
+  position:absolute;left:-6px;bottom:-6px;
+  min-width:26px;height:26px;padding:0 5px;border-radius:50%;
+  background:linear-gradient(180deg,#3a4570,#1a2036);
+  border:2px solid var(--gold);color:var(--gold);
+  display:flex;align-items:center;justify-content:center;
+  font-size:13px;font-weight:900;
+}
+
+/* --- центр: имя, полосы, умения --- */
+.dh-core{display:flex;flex-direction:column;gap:3px;min-width:min(52vw,330px)}
+.dh-name{font-size:12px;font-weight:800;letter-spacing:.5px;text-shadow:0 2px 5px #000}
 
 .pts-dot{
   display:inline-flex;align-items:center;justify-content:center;min-width:16px;height:16px;
@@ -61,15 +93,18 @@
 .bar-xp{height:6px}
 .bar-xp i{background:linear-gradient(180deg,#c79dff,#8548e0)}
 
-/* ---------------- предметы в HUD ---------------- */
-.bh-items{
-  position:absolute;top:calc(46px + env(safe-area-inset-top));right:10px;
-  display:grid;grid-template-columns:repeat(3,26px);gap:3px;
+/* --- правая колонка: золото и сетка предметов --- */
+.dh-side{display:flex;flex-direction:column;align-items:flex-end;gap:5px;flex:none}
+.dh-gold{
+  display:flex;align-items:center;gap:5px;
+  background:rgba(0,0,0,.5);border:1px solid var(--line);border-radius:8px;
+  padding:3px 9px;font-size:13px;font-weight:800;color:var(--gold);
 }
+.bh-items{display:grid;grid-template-columns:repeat(3,30px);gap:3px}
 .bh-items .isl{
-  width:26px;height:26px;border-radius:6px;background:rgba(0,0,0,.5);
+  width:30px;height:30px;border-radius:6px;background:rgba(0,0,0,.5);
   border:1px solid var(--line);border-style:solid;
-  display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:900;
+  display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:900;
 }
 
 /* ---------------- босс ---------------- */
@@ -116,7 +151,7 @@
 .mob-ctl{position:absolute;inset:0;z-index:6;pointer-events:none;display:none}
 .mob-ctl.on{display:block}
 .stick{
-  position:absolute;left:22px;bottom:calc(22px + env(safe-area-inset-bottom));
+  position:absolute;left:22px;bottom:calc(150px + env(safe-area-inset-bottom));
   width:118px;height:118px;border-radius:50%;
   background:rgba(255,255,255,.05);border:2px solid rgba(255,255,255,.14);pointer-events:auto;
 }
@@ -126,14 +161,11 @@
 }
 
 /* ---------------- панель умений ---------------- */
-.skillbar{
-  position:absolute;right:14px;bottom:calc(16px + env(safe-area-inset-bottom));z-index:7;
-  display:flex;gap:9px;align-items:flex-end;
-}
+.skillbar{display:flex;gap:6px;align-items:flex-end;margin-top:4px}
 .skillbar.dimmed{opacity:.45;pointer-events:none}
 
 .sb{
-  position:relative;width:60px;height:60px;border-radius:14px;border:2px solid var(--line);
+  position:relative;width:52px;height:52px;border-radius:11px;border:2px solid var(--line);
   background:var(--panel2);display:flex;align-items:center;justify-content:center;
   overflow:hidden;
 }
@@ -148,8 +180,8 @@
 .sb.toggled{outline:2px solid #fff;outline-offset:-2px}
 .sb:active{transform:scale(.94)}
 
-.sb-elem{width:52px;height:52px}
-.sb-elem .gl{font-size:20px}
+.sb-elem{width:46px;height:46px}
+.sb-elem .gl{font-size:18px}
 .sb-invoke{border-color:#fff;box-shadow:0 0 0 1px rgba(255,255,255,.15) inset}
 .sb-invoke.ready{animation:invoke-glow 1.1s ease-in-out infinite}
 @keyframes invoke-glow{
@@ -159,12 +191,11 @@
 
 /* ---------------- связка реагентов ---------------- */
 .reagent-bar{
-  position:absolute;right:14px;bottom:calc(88px + env(safe-area-inset-bottom));z-index:7;
-  display:flex;flex-direction:column;align-items:flex-end;gap:5px;pointer-events:none;
+  display:flex;align-items:center;gap:8px;margin-top:3px;pointer-events:none;
 }
-.rg-slots{display:flex;gap:6px}
+.rg-slots{display:flex;gap:5px}
 .rg-slot{
-  width:30px;height:30px;border-radius:9px;background:rgba(0,0,0,.55);
+  width:26px;height:26px;border-radius:8px;background:rgba(0,0,0,.55);
   border:2px solid var(--line);display:flex;align-items:center;justify-content:center;
   font-size:15px;transition:transform .12s,box-shadow .12s;
 }
@@ -180,7 +211,7 @@
 /* ---------------- учебный полигон ---------------- */
 .train-panel{
   position:absolute;left:50%;transform:translateX(-50%);
-  bottom:calc(14px + env(safe-area-inset-bottom));z-index:8;
+  bottom:calc(148px + env(safe-area-inset-bottom));z-index:8;
   display:flex;flex-direction:column;align-items:center;gap:6px;pointer-events:none;
 }
 .tr-dps{
@@ -195,18 +226,25 @@
   .bh-map{display:none}
   .boss-hud{width:min(86vw,420px);top:calc(78px + env(safe-area-inset-top))}
   .bb-concept{font-size:11.5px}
-  .sb{width:54px;height:54px}
-  .sb .gl{font-size:19px}
-  .sb-elem{width:46px;height:46px}
-  .sb-elem .gl{font-size:17px}
-  .skillbar{gap:7px}
-  .reagent-bar{bottom:calc(80px + env(safe-area-inset-bottom));right:10px}
-  .rg-slot{width:26px;height:26px;font-size:13px}
-  .train-panel{bottom:calc(78px + env(safe-area-inset-bottom))}
+
+  .dota-hud{gap:7px;padding:6px 8px;border-radius:13px;width:calc(100vw - 14px)}
+  .dh-portrait{width:56px;height:56px}
+  .dh-lvl{min-width:22px;height:22px;font-size:11px}
+  .dh-core{min-width:0;flex:1}
+  .sb{width:46px;height:46px;border-radius:10px}
+  .sb .gl{font-size:18px}
+  .sb-elem{width:40px;height:40px}
+  .sb-elem .gl{font-size:15px}
+  .skillbar{gap:5px}
+  .rg-slot{width:22px;height:22px;font-size:11px}
+  .rg-name{font-size:10px;padding:2px 6px}
+  .bh-items{grid-template-columns:repeat(3,26px)}
+  .bh-items .isl{width:26px;height:26px;font-size:11px}
+  .train-panel{bottom:calc(140px + env(safe-area-inset-bottom))}
   .tr-btns .chip{font-size:10px;padding:5px 8px}
 }
 @media (max-height:430px){
-  .bh-player{width:min(38vw,200px)}
-  .sb{width:48px;height:48px}
+  .dh-portrait{width:52px;height:52px}
+  .sb{width:42px;height:42px}
   .stick{width:100px;height:100px;left:16px;bottom:16px}
 }

@@ -74,6 +74,9 @@ AA.module('game/stats', (function () {
       }
     }
 
+    /* ---------- таланты ---------- */
+    if (u.talents) AA.Game.talents.applyStats(u, s);
+
     /* ---------- баффы ---------- */
     for (i = 0; i < u.buffs.length; i++) {
       var f = u.buffs[i];

@@ -26,6 +26,9 @@ AA.module('game/combat', (function () {
       dmg *= AA.Game.stats.armorMult(tgt.stats.armor);
     }
 
+    // талант «Раскол льда»: замороженные получают вдвое
+    if (src && AA.Game.talents.has(src, 'fr_shatter') && B().has(tgt, 'freeze')) dmg *= 2;
+
     var crit = false;
     if (isAuto && s.crit > 0 && Math.random() * 100 < s.crit) { dmg *= s.critMult; crit = true; }
     if (isAuto && src) {
@@ -45,9 +48,23 @@ AA.module('game/combat', (function () {
       if (dmg <= 0) return ab;
     }
 
+    // талант «Казнь»: добивание слабых целей автоатакой
+    if (isAuto && src && AA.Game.talents.has(src, 'sh_execute') &&
+      tgt !== w.hero && tgt.hp - dmg < tgt.maxHp * .12) {
+      dmg = tgt.hp;
+      fx.floatText(tgt.x, tgt.y - tgt.r - 20, 'КАЗНЬ', '#b07dff', 18);
+    }
+
     tgt.hp -= dmg;
     tgt.flash = tiny ? Math.max(tgt.flash, .18) : 1;
     if (src === w.hero) w.dmgWindow.push([w.time, dmg]);
+
+    // талант «Шипы камня»: часть урона возвращается атакующему
+    if (src && src !== tgt && !src._reflecting && AA.Game.talents.has(tgt, 'go_thorns')) {
+      src._reflecting = true;
+      damage(tgt, src, dmg * .25, 'phys');
+      src._reflecting = false;
+    }
 
     if (!tiny) {
       fx.floatText(tgt.x + m.rnd(-9, 9), tgt.y - tgt.r - 4, Math.round(dmg),
@@ -91,6 +108,18 @@ AA.module('game/combat', (function () {
   function kill(src, tgt) {
     if (tgt.dead) return;
     var w = W(), fx = FX();
+
+    // талант «Второе дыхание»: один раз за забег смерть отменяется
+    if (tgt === w.hero && AA.Game.talents.has(tgt, 'be_second_wind') && !tgt._secondWindUsed) {
+      tgt._secondWindUsed = true;
+      tgt.hp = 1;
+      fx.ring(tgt.x, tgt.y, 260, '#ff4d5e');
+      fx.flash('#ff4d5e', .4);
+      fx.hitstop(.12);
+      AA.UI.toast.show('Второе дыхание!');
+      return;
+    }
+
     tgt.dead = true;
 
     w.corpses.push({
@@ -178,14 +207,23 @@ AA.module('game/combat', (function () {
     u.swing = .22;
 
     var onHit = makeOnHit(u);
+    var color = u.magic ? (u.glow || '#c08aff') : (u.team === 1 ? (u.glow || u.c1) : u.c1);
+
     if (u.stats.range > 150) {
+      /* --- дальний бой: вспышка у оружия, отдача, снаряд --- */
+      var mx = u.x + Math.cos(u.face) * u.r * 1.5;
+      var my = u.y + Math.sin(u.face) * u.r * 1.5;
+      FX().muzzle(mx, my, u.face, color);
+      FX().sparks(mx, my, color, 4);
+      u.recoilT = .12;
       AA.Game.projectiles.spawn({
         from: u, to: t, speed: 820, r: u.magic ? 7 : 5,
-        color: u.magic ? (u.glow || '#c08aff') : (u.team === 1 ? (u.glow || u.c1) : u.c1),
-        trail: true, homing: true, onHit: onHit
+        color: color, trail: true, homing: true, onHit: onHit
       });
     } else {
-      FX().slash(u, t, u.team === 1 ? (u.glow || u.c1) : u.c1);
+      /* --- ближний бой: широкая дуга замаха --- */
+      FX().swipe(u, u.face, u.stats.range + u.r * 1.4, color);
+      FX().slash(u, t, color);
       onHit(t);
     }
   }

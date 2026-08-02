@@ -51,6 +51,7 @@ AA.module('ui/skilltree', (function () {
     });
 
     box.appendChild(attributeRow(h));
+    box.appendChild(AA.UI.talents.chosenList());
     if (h.invoker) box.appendChild(comboTable());
   }
 

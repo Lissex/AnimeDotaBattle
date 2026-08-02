@@ -4,7 +4,7 @@ AA.module('ui/screens', (function () {
   'use strict';
 
   var SCREENS = ['loading', 'menu', 'heroes', 'battle'];
-  var OVERLAYS = ['shop', 'skills', 'pause', 'over', 'howto'];
+  var OVERLAYS = ['shop', 'skills', 'talent', 'comic', 'settings', 'pause', 'over', 'howto'];
 
   var current = 'loading';
   var run = { revived: false, x2used: false, pendingSouls: 0, pendingStart: false };
@@ -32,6 +32,8 @@ AA.module('ui/screens', (function () {
     var level = training ? A.MAX_HERO_LV : 1 + d.permLv(def.id);
 
     var hero = AA.Game.factory.hero(def, level, {}, []);
+    hero.skin = AA.Content.skins.get(def.id, save.skins[def.id] || 'default');
+
     if (training) {
       hero.pts = 0;
       def.skills.forEach(function (id) { hero.skillLv[id] = A.MAX_SKILL_LV; });

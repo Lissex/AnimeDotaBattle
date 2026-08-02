@@ -15,11 +15,19 @@
       },
       cast: function (u, l) {
         var a = g(), self = this;
-        a.ring(u.x, u.y, this.radius, '#7fd4ff'); a.shake(6);
-        a.aoeApply(u, u.x, u.y, this.radius, function (e) {
-          a.damage(u, e, self.dmg[l], 'magic');
-          a.buff(e, { id: 'slow', dur: 3, msMul: 1 - self.slow[l] / 100, color: '#7fd4ff' });
-        });
+        var r = this.radius * (a.talent(u, 'fr_nova_r') ? 1.5 : 1);
+        // осколок и талант «Двойная нова»: второй взрыв с задержкой
+        var twice = a.shard(u) || a.talent(u, 'fr_nova_double');
+
+        var blast = function () {
+          a.ring(u.x, u.y, r, '#7fd4ff'); a.shake(6);
+          a.aoeApply(u, u.x, u.y, r, function (e) {
+            a.damage(u, e, self.dmg[l], 'magic');
+            a.buff(e, { id: 'slow', dur: 3, msMul: 1 - self.slow[l] / 100, color: '#7fd4ff' });
+          });
+        };
+        blast();
+        if (twice) a.delay(.5, function () { if (!u.dead) blast(); });
         return true;
       }
     },

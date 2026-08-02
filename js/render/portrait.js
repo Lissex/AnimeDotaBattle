@@ -7,7 +7,7 @@ AA.module('render/portrait', (function () {
    * @param {HTMLCanvasElement} el
    * @param {object} def  описание из content/heroes или content/enemies
    */
-  function draw(el, def) {
+  function draw(el, def, skin) {
     var ctx = el.getContext('2d');
     var size = el.width;
 
@@ -23,7 +23,7 @@ AA.module('render/portrait', (function () {
     var isEnemy = String(def.shape).indexOf('e_') === 0;
     var mock = {
       r: size * (isEnemy ? .3 : .24), shape: def.shape, anim: def.anim,
-      c1: def.c1, c2: def.c2, glow: def.glow,
+      c1: def.c1, c2: def.c2, glow: def.glow, skin: skin || null,
       face: -.35, vx: 0, vy: 0, step: 0, swing: 0, flash: 0, wob: 0,
       isBoss: String(def.shape).indexOf('e_boss') === 0
     };
@@ -42,11 +42,11 @@ AA.module('render/portrait', (function () {
   }
 
   /** Готовый <canvas> нужного размера — удобно вставлять в разметку. */
-  function element(size, def) {
+  function element(size, def, skin) {
     var c = document.createElement('canvas');
     c.width = c.height = size * 2;
     c.style.width = c.style.height = '100%';
-    draw(c, def);
+    draw(c, def, skin);
     return c;
   }
 

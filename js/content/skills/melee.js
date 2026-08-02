@@ -16,11 +16,17 @@
       cast: function (u, l) {
         var a = g(), t = a.pickTarget(u, this.range), self = this;
         if (!t) return false;
+        // осколок: крюк пробивает и тянет всех на линии, талант делает то же
+        var sweep = a.shard(u) || a.talent(u, 'bu_hook_all');
         a.projectile({
-          from: u, to: t, speed: 1200, r: 10, color: '#d9a05b', trail: true, homing: true,
+          from: u, to: t, speed: 1200, r: 10, color: '#d9a05b',
+          trail: true, homing: !sweep, pierce: sweep ? 99 : 0,
           onHit: function (x) {
-            a.damage(u, x, self.dmg[l], 'phys');
+            a.damage(u, x, self.dmg[l] * (sweep ? 1 : 1), 'phys');
             a.pull(x, u, 62);
+            if (a.talent(u, 'bu_hook_stun')) {
+              a.buff(x, { id: 'freeze', dur: 1.2, stun: true, color: '#d9a05b' });
+            }
             a.shake(7); a.burst(x.x, x.y, '#d9a05b', 16);
           }
         });
@@ -40,9 +46,18 @@
       tick: function (u, l, dt) {
         if (!u.toggles.rot) return;
         var a = g();
-        a.aoeAt(u, u.x, u.y, this.radius, this.dmg[l] * dt, 'magic');
-        u.hp = Math.max(1, u.hp - this.selfDmg[l] * dt);
-        a.aura(u, this.radius, 'rgba(122,192,67,.16)');
+        var big = a.talent(u, 'bu_rot_huge');
+        var r = this.radius * (big ? 1.8 : 1);
+        var dmg = this.dmg[l] * (big ? 1.5 : 1);
+
+        a.aoeAt(u, u.x, u.y, r, dmg * dt, 'magic');
+        if (a.talent(u, 'bu_rot_slow')) {
+          a.forEachEnemy(u, r, function (e) {
+            a.buff(e, { id: 'rotslow', dur: .4, msMul: .7, quiet: true });
+          });
+        }
+        if (!a.talent(u, 'bu_rot_free')) u.hp = Math.max(1, u.hp - this.selfDmg[l] * dt);
+        a.aura(u, r, 'rgba(122,192,67,.16)');
       }
     },
 
@@ -276,17 +291,28 @@
       cast: function (u, l) {
         var a = g(), t = a.pickTarget(u, this.range), self = this;
         if (!t) return false;
-        a.projectile({
-          from: u, to: t, speed: 700, r: 14, color: '#b0a08a',
-          trail: true, homing: true, big: true, spin: true,
-          onHit: function (x) {
-            a.aoeAt(u, x.x, x.y, self.radius, self.dmg[l], 'phys');
-            a.aoeApply(u, x.x, x.y, self.radius, function (e) {
-              a.buff(e, { id: 'freeze', dur: 1, stun: true, color: '#8a8a8a' });
+        // осколок и талант «Двойная глыба»: летят две
+        var shots = (a.shard(u) || a.talent(u, 'go_boulder_2')) ? 2 : 1;
+
+        for (var k = 0; k < shots; k++) {
+          (function (n) {
+            a.delay(n * .16, function () {
+              if (u.dead) return;
+              var tgt = a.pickTarget(u, self.range) || t;
+              a.projectile({
+                from: u, to: tgt, speed: 700, r: 14, color: '#b0a08a',
+                trail: true, homing: true, big: true, spin: true,
+                onHit: function (x) {
+                  a.aoeAt(u, x.x, x.y, self.radius, self.dmg[l], 'phys');
+                  a.aoeApply(u, x.x, x.y, self.radius, function (e) {
+                    a.buff(e, { id: 'freeze', dur: 1, stun: true, color: '#8a8a8a' });
+                  });
+                  a.ring(x.x, x.y, self.radius, '#b0a08a'); a.shake(9); a.hitstop(.05);
+                }
+              });
             });
-            a.ring(x.x, x.y, self.radius, '#b0a08a'); a.shake(9); a.hitstop(.05);
-          }
-        });
+          })(k);
+        }
         return true;
       }
     },

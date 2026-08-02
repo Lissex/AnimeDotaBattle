@@ -42,9 +42,11 @@ AA.module('render/renderer', (function () {
     depthSorted(ctx);
 
     /* --- 4. поверх --- */
+    fx.swipes();
     fx.bolts();
     fx.pillars();
     fx.slashes();
+    fx.muzzles();
     fx.projectiles();
     fx.particles();
     fx.weather(dt || 0);

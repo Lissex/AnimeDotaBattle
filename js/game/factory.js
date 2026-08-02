@@ -17,6 +17,8 @@ AA.module('game/factory', (function () {
 
       level: level || 1, skillLv: skillLv || {}, items: items || [],
       skills: AA.Content.skills.resolve(def.skills),
+      talents: {},                    // выбранные таланты по рубежам
+      skin: null,                     // подставляется из ui/screens
 
       x: 0, y: 0, vx: 0, vy: 0, face: 0,
       atkCd: 0, cds: {}, buffs: [], toggles: {},

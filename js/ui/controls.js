@@ -23,6 +23,7 @@ AA.module('ui/controls', (function () {
     btn.classList.toggle('on', on);
     d.$('mob-ctl').classList.toggle('on', !on && AA.Core.input.isTouch());
     d.$('skillbar').classList.toggle('dimmed', on);
+    if (on) AA.Core.input.clearOrder();
   }
 
   /* ---------------- пауза ---------------- */
@@ -34,9 +35,7 @@ AA.module('ui/controls', (function () {
     AA.Game.loop.pause(paused);
 
     if (paused) {
-      d.$('btn-quit').style.display = '';
       d.$('btn-quit').textContent = w.training ? d.t('ВЫЙТИ С ПОЛИГОНА') : d.t('СДАТЬСЯ');
-      d.$('btn-resume').textContent = d.t('ПРОДОЛЖИТЬ');
       S().open('pause');
       AA.Core.audio.mute(true);
     } else {
@@ -52,7 +51,8 @@ AA.module('ui/controls', (function () {
     document.addEventListener('keydown', function (e) {
       if (!S().isBattle() || e.repeat) return;
 
-      if (MOVE[e.code]) { input.setKey(MOVE[e.code], 1); e.preventDefault(); return; }
+      if (MOVE[e.code]) { input.setKey(MOVE[e.code], 1); input.clearOrder(); e.preventDefault(); return; }
+      if (e.code === 'KeyH') { input.clearOrder(); e.preventDefault(); return; }   // стоп
 
       if (CAST[e.code] !== undefined) {
         var i = AA.Game.abilities.activeIndex(W().hero, CAST[e.code]);
@@ -121,6 +121,57 @@ AA.module('ui/controls', (function () {
     }, { passive: true, once: true });
   }
 
+  /* ---------------- мышь: приказ правой кнопкой ----------------
+     Как в Dota: ПКМ — идти в точку, а если под курсором враг —
+     подойти и бить его. Клавиши в любой момент перехватывают. */
+  function bindMouse() {
+    var d = D(), input = AA.Core.input;
+    var canvas = d.$('cv');
+    var held = false;
+
+    function toWorld(e) {
+      var r = canvas.getBoundingClientRect();
+      return { x: e.clientX - r.left, y: e.clientY - r.top };
+    }
+
+    /** Враг под курсором с запасом на промах. */
+    function enemyAt(p) {
+      var w = W(), best = null, bd = 1e9;
+      for (var i = 0; i < w.units.length; i++) {
+        var u = w.units[i];
+        if (u.dead || u.team !== 1) continue;
+        var dx = u.x - p.x, dy = u.y - p.y;
+        var d0 = Math.sqrt(dx * dx + dy * dy);
+        if (d0 < u.r + 22 && d0 < bd) { bd = d0; best = u; }
+      }
+      return best;
+    }
+
+    function issue(e) {
+      if (!S().isBattle() || W().auto) return;
+      var p = toWorld(e);
+      var target = enemyAt(p);
+      input.order(p.x, p.y, target);
+      AA.Game.effects.ring(p.x, p.y, target ? 46 : 30,
+        target ? '#ff6a5a' : '#8fd66a');
+    }
+
+    canvas.addEventListener('pointerdown', function (e) {
+      if (e.button !== 2) return;                 // только правая
+      held = true;
+      issue(e);
+      e.preventDefault();
+    });
+    canvas.addEventListener('pointermove', function (e) {
+      var p = toWorld(e);
+      input.setCursor(p.x, p.y, true);
+      if (held && e.buttons & 2) issue(e);        // удержание — непрерывный приказ
+    });
+    ['pointerup', 'pointercancel', 'pointerleave'].forEach(function (ev) {
+      canvas.addEventListener(ev, function () { held = false; });
+    });
+  }
+
   /* ---------------- кнопки боя и оверлеев ---------------- */
   function bindButtons() {
     var d = D(), s = S();
@@ -134,8 +185,9 @@ AA.module('ui/controls', (function () {
         AA.Game.loop.pause(false);
         AA.Core.audio.mute(false);
       }
-      d.$('btn-resume').textContent = d.t('ПРОДОЛЖИТЬ');
     };
+
+    d.$('btn-pause-settings').onclick = function () { AA.UI.settings.open(); };
 
     d.$('btn-quit').onclick = function () {
       if (!s.isBattle()) { s.close('pause'); return; }
@@ -173,16 +225,6 @@ AA.module('ui/controls', (function () {
       }, function (ok) { if (!ok) AA.UI.toast.show('Реклама недоступна'); });
     };
 
-    d.$('opt-sound').onchange = function () {
-      d.save().sound = this.checked;
-      AA.Core.audio.set(this.checked);
-      AA.Platform.storage.commit();
-    };
-    d.$('opt-shake').onchange = function () {
-      d.save().shake = this.checked;
-      AA.Game.effects.setShake(this.checked);
-      AA.Platform.storage.commit();
-    };
   }
 
   /* ---------------- запреты браузера ---------------- */
@@ -196,6 +238,7 @@ AA.module('ui/controls', (function () {
   function bind() {
     bindKeyboard();
     bindStick();
+    bindMouse();
     bindButtons();
     bindGuards();
   }

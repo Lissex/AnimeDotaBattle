@@ -6,9 +6,10 @@ AA.module('game/abilities', (function () {
   function W() { return AA.Game.world.state; }
   function toast(msg) { if (AA.UI && AA.UI.toast) AA.UI.toast.show(msg); }
 
-  /** Фактическая перезарядка с учётом сокращения. */
+  /** Фактическая перезарядка с учётом сокращения и талантов. */
   function cooldown(u, skill, lvl) {
-    return skill.cd[lvl] * (1 - u.stats.cdr / 100);
+    var base = skill.cd[lvl] - AA.Game.talents.cdBonus(u, skill.id);
+    return Math.max(.5, base) * (1 - u.stats.cdr / 100);
   }
 
   /**
@@ -66,8 +67,18 @@ AA.module('game/abilities', (function () {
   /** Сила связки — сумма уровней трёх стихий, от 3 до 12. */
   function invokePower(u) {
     if (u.reagents.length < 3) return 0;
-    var p = 0;
-    for (var i = 0; i < 3; i++) p += elemLevel(u, u.reagents[i]);
+    var p = 0, i;
+    var bonus = AA.Game.talents.has(u, 'ar_all_elements') ? 1 : 0;   // «Мастер стихий»
+    for (i = 0; i < 3; i++) p += elemLevel(u, u.reagents[i]) + bonus;
+
+    // «Чистая стихия»: три одинаковых реагента бьют сильнее
+    if (AA.Game.talents.has(u, 'ar_elem_boost') &&
+      u.reagents[0] === u.reagents[1] && u.reagents[1] === u.reagents[2]) {
+      p = Math.round(p * 1.6);
+    }
+    // Осколок Аганима у Аркана добавляет силы всем связкам
+    for (i = 0; i < u.items.length; i++) if (u.items[i].shard) { p += 2; break; }
+
     return p;
   }
 
@@ -91,9 +102,19 @@ AA.module('game/abilities', (function () {
     }
 
     u.mp -= spell.mana;
-    u.invokeCds[spell.key] = spell.cd * (1 - u.stats.cdr / 100);
+    var cdMul = AA.Game.talents.has(u, 'ar_quick_invoke') ? .65 : 1;
+    u.invokeCds[spell.key] = spell.cd * cdMul * (1 - u.stats.cdr / 100);
     u.castFx = .35;
     AA.Core.audio.cast();
+
+    // талант «Эхо связки»: каждая третья срабатывает дважды
+    if (AA.Game.talents.has(u, 'ar_double_invoke')) {
+      u._invokeCount = (u._invokeCount || 0) + 1;
+      if (u._invokeCount % 3 === 0) {
+        var pw = invokePower(u);
+        AA.Game.effects.timer(.35, function () { if (!u.dead) spell.cast(u, pw); });
+      }
+    }
     return true;
   }
 

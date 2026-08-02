@@ -63,6 +63,14 @@ AA.module('game/api', (function () {
     hitstop: function (t) { F().hitstop(t); },
     delay: function (t, fn) { F().timer(t, fn); },
 
+    /* ---------- таланты и осколок ---------- */
+    talent: function (u, id) { return AA.Game.talents.has(u, id); },
+    /** Куплен ли «Осколок Аганима» — усиливает ключевое умение героя. */
+    shard: function (u) {
+      for (var i = 0; i < u.items.length; i++) if (u.items[i].shard) return true;
+      return false;
+    },
+
     /* ---------- Аркан ---------- */
     addReagent: function (u, elem) { AA.Game.abilities.addReagent(u, elem); },
 

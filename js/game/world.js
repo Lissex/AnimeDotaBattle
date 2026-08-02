@@ -7,7 +7,7 @@ AA.module('game/world', (function () {
   var POOLS = [
     'units', 'proj', 'parts', 'floats', 'rings', 'tele', 'bolts', 'slashes',
     'auras', 'corpses', 'sparks', 'zones', 'walls', 'cones', 'pillars',
-    'embers', 'timers', 'runes'
+    'embers', 'timers', 'runes', 'swipes', 'muzzles'
   ];
 
   var W = {

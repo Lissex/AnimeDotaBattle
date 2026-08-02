@@ -20,8 +20,12 @@ AA.module('ui/dom', (function () {
 
   /* ---------------- прогресс и валюта ---------------- */
   function save() { return AA.Platform.storage.data; }
-  function isDev() { return AA.Platform.sdk.isDev(); }
   function isTraining() { return AA.Game.world.state.training; }
+
+  /** Отладка активна, только если SDK не загрузился И игрок её не выключил. */
+  function isDev() {
+    return AA.Platform.sdk.isDev() && !save().forceGame;
+  }
 
   function soulsText() { return isDev() ? '∞' : fmt(save().souls); }
 

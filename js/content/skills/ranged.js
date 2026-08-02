@@ -18,10 +18,17 @@
         var a = g(), t = a.pickTarget(u, 900), self = this;
         var base = t ? Math.atan2(t.y - u.y, t.x - u.x) : u.face;
         var n = this.arrows[l];
+        var ring = a.talent(u, 'ra_volley_ring');           // талант: во все стороны
+        var pierce = a.talent(u, 'ra_volley_pierce') ? 99 : 1;
+        if (ring) n = Math.max(n, 12);
+
         for (var i = 0; i < n; i++) {
+          var ang = ring
+            ? base + i / n * 6.2832
+            : base + (i - (n - 1) / 2) * .17;
           a.projectile({
-            from: u, angle: base + (i - (n - 1) / 2) * .17, speed: 950, r: 5,
-            color: '#9ad4ff', range: 780, pierce: 1, trail: true,
+            from: u, angle: ang, speed: 950, r: 5,
+            color: '#9ad4ff', range: 780, pierce: pierce, trail: true,
             onHit: function (x) { a.damage(u, x, self.dmg[l], 'phys'); }
           });
         }
@@ -54,10 +61,25 @@
       cast: function (u, l) {
         var a = g(), t = a.pickTarget(u, 1100), self = this;
         var ang = t ? Math.atan2(t.y - u.y, t.x - u.x) : u.face;
+        // осколок и талант «Расщепление»: стрела дробится при попадании
+        var split = a.shard(u) || a.talent(u, 'ra_pierce_split');
+
         a.projectile({
           from: u, angle: ang, speed: 1500, r: 9, color: '#7fd4ff',
           range: 1100, pierce: 99, trail: true, big: true,
-          onHit: function (x) { a.damage(u, x, self.dmg[l], 'phys'); a.sparkle(x.x, x.y, '#7fd4ff'); }
+          onHit: function (x) {
+            a.damage(u, x, self.dmg[l], 'phys');
+            a.sparkle(x.x, x.y, '#7fd4ff');
+            if (!split || x._split) return;
+            x._split = true;
+            for (var k = -1; k <= 1; k += 2) {
+              a.projectile({
+                from: x, angle: ang + k * .6, speed: 1100, r: 6, color: '#7fd4ff',
+                range: 420, pierce: 2, trail: true,
+                onHit: function (y) { a.damage(u, y, self.dmg[l] * .5, 'phys'); }
+              });
+            }
+          }
         });
         a.shake(5); a.recoil(u, 16);
         return true;

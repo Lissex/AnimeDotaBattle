@@ -11,6 +11,8 @@ AA.module('game/effects', (function () {
 
   /* ---------------- частицы и текст ---------------- */
   function floatText(x, y, txt, color, size) {
+    // числа урона можно отключить в настройках
+    if (AA.Platform.storage.data.numbers === false) return;
     W().floats.push({
       x: x, y: y, txt: '' + txt, c: color, s: size || 14,
       t: 0, life: .95, vy: -50, vx: M().rnd(-10, 10)
@@ -60,6 +62,19 @@ AA.module('game/effects', (function () {
   }
 
   /* ---------------- геометрия ---------------- */
+  /** Размашистая дуга удара ближнего боя: видно, что это замах, а не выстрел. */
+  function swipe(u, angle, radius, color) {
+    W().swipes.push({
+      unit: u, a: angle, r: radius, c: color,
+      t: 0, life: .26, arc: 1.5
+    });
+  }
+
+  /** Вспышка выстрела у дальнобойного: короткая, у самого оружия. */
+  function muzzle(x, y, angle, color) {
+    W().muzzles.push({ x: x, y: y, a: angle, c: color, t: 0, life: .13 });
+  }
+
   function ring(x, y, r, color) { W().rings.push({ x: x, y: y, r: 12, max: r, c: color, t: 0, life: .48 }); }
   function aura(u, r, color) { W().auras.push({ x: u.x, y: u.y, r: r, c: color }); }
   function slash(a, b, color) { W().slashes.push({ x1: a.x, y1: a.y, x2: b.x, y2: b.y, c: color, t: 0, life: .2 }); }
@@ -162,7 +177,7 @@ AA.module('game/effects', (function () {
       o.y += o.vy * dt; o.x += o.vx * dt; o.vy *= .92;
       if (o.t >= o.life) w.floats.splice(i, 1);
     }
-    ['rings', 'bolts', 'slashes', 'corpses', 'pillars', 'cones'].forEach(function (k) {
+    ['rings', 'bolts', 'slashes', 'corpses', 'pillars', 'cones', 'swipes', 'muzzles'].forEach(function (k) {
       var list = w[k];
       for (var j = list.length - 1; j >= 0; j--) {
         list[j].t += dt;
@@ -193,7 +208,7 @@ AA.module('game/effects', (function () {
 
   return {
     floatText: floatText, burst: burst, sparks: sparks, sparkle: sparkle,
-    spinBurst: spinBurst, ember: ember,
+    spinBurst: spinBurst, ember: ember, swipe: swipe, muzzle: muzzle,
     ring: ring, aura: aura, slash: slash, pillar: pillar, bolt: bolt,
     telegraph: telegraph, zone: zone, wall: wall, cone: cone,
     shake: shake, flash: flash, hitstop: hitstop, timer: timer,

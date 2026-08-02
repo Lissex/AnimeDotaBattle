@@ -13,8 +13,15 @@ AA.module('platform/storage', (function () {
     unlocked: ['butcher', 'ranger'],
     selected: 'butcher',
     heroLv: {},
+
+    skins: {},          // heroId → выбранный skinId
+    ownedSkins: [],     // ключи вида 'butcher:slaughter'
+    story: {},          // heroId → сколько глав открыто
+
     sound: true,
     shake: true,
+    numbers: true,      // показывать числа урона
+    forceGame: false,   // играть по-честному, даже если SDK не загрузился
     seenHowto: false
   };
 
@@ -30,7 +37,10 @@ AA.module('platform/storage', (function () {
       if (raw[k] !== undefined && raw[k] !== null) data[k] = raw[k];
     }
     if (!Array.isArray(data.unlocked) || !data.unlocked.length) data.unlocked = ['butcher', 'ranger'];
-    if (!data.heroLv || typeof data.heroLv !== 'object') data.heroLv = {};
+    if (!Array.isArray(data.ownedSkins)) data.ownedSkins = [];
+    ['heroLv', 'skins', 'story'].forEach(function (k) {
+      if (!data[k] || typeof data[k] !== 'object') data[k] = {};
+    });
   }
 
   function readLocal() {
@@ -58,11 +68,19 @@ AA.module('platform/storage', (function () {
     if (immediate) push(); else timer = setTimeout(push, 400);
   }
 
+  /** Полный сброс прогресса — из настроек. */
+  function reset() {
+    var fresh = clone(DEFAULTS);
+    for (var k in fresh) data[k] = fresh[k];
+    commit(true);
+  }
+
   return {
     data: data,
     load: readLocal,
     merge: merge,
     commit: commit,
+    reset: reset,
     setCloudWriter: function (fn) { cloudWriter = fn; },
     defaults: DEFAULTS
   };

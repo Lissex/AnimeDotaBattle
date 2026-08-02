@@ -54,7 +54,7 @@ AA.module('game/loop', (function () {
     if (w.auto) {
       AA.Game.ai.autopilot(h, dt);
     } else {
-      var mv = AA.Core.input.moveVector();
+      var mv = AA.Core.input.moveVector(h);
       h.vx = mv.x; h.vy = mv.y;
       if (mv.len > .05) h.face = Math.atan2(mv.y, mv.x);
     }
@@ -101,6 +101,7 @@ AA.module('game/loop', (function () {
 
       if (u.flash > 0) u.flash = Math.max(0, u.flash - dt * 5);
       if (u.swing > 0) u.swing = Math.max(0, u.swing - dt * 4.2);
+      if (u.recoilT > 0) u.recoilT = Math.max(0, u.recoilT - dt);
       if (u.castFx > 0) u.castFx = Math.max(0, u.castFx - dt * 3);
       if (u.hp <= 0) AA.Game.combat.kill(null, u);
     }
