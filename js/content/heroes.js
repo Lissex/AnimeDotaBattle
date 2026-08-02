@@ -101,6 +101,25 @@ AA.module('content/heroes', (function () {
       skills: ['reflection', 'splinter', 'metamorph', 'sunder']
     },
     {
+      id: 'lurker', name: 'Хищник Глубин', role: 'АССАСИН · ДУЭЛЯНТ', cost: 4000,
+      shape: 'lurker', anim: 'prowl', c1: '#3ad8c0', c2: '#0e3a3a', primary: 'agi',
+      tip: 'Дуэлянт: пьёт сущность из тех, кого бьёт, сажает жертву на привязь ' +
+        'и уходит в тень, из которой можно бить не раскрываясь. ' +
+        'Чем дольше идёт бой, тем он сильнее, а враг слабее.',
+      attr: { str: 21, agi: 21, int: 16 }, gain: { str: 1.8, agi: 2.5, int: 1.5 },
+      base: { atk: 24, armor: 2, ms: 300, as: .86, range: 70, mr: .25 },
+      skills: ['darkpact', 'pounce', 'shadowdance', 'essence']
+    },
+    {
+      id: 'reaper', name: 'Жнец Душ', role: 'КЕРРИ · ДУШИ', cost: 4400,
+      shape: 'reaper', anim: 'drift', c1: '#8a2ad8', c2: '#1a0828', primary: 'agi',
+      tip: 'Растёт не от предметов, а от трупов: каждая смерть рядом даёт душу, ' +
+        'каждая душа — прибавку к урону. Реквием разряжает весь запас разом.',
+      attr: { str: 19, agi: 22, int: 18 }, gain: { str: 2.1, agi: 3.5, int: 1.8 },
+      base: { atk: 20, armor: 1, ms: 305, as: .78, range: 500, mr: .25 },
+      skills: ['rend', 'soulfeast', 'requiem', 'harvest']
+    },
+    {
       id: 'golem', name: 'Голем', role: 'ТАНК · ПЛОЩАДНОЙ УРОН', cost: 4200,
       shape: 'golem', anim: 'stone', c1: '#9a7b4f', c2: '#3a2c18', primary: 'str',
       tip: 'Самый живучий герой: стоит в центре толпы и перемалывает её землетрясением.',

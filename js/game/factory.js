@@ -22,6 +22,7 @@ AA.module('game/factory', (function () {
 
       x: 0, y: 0, vx: 0, vy: 0, face: 0,
       atkCd: 0, cds: {}, buffs: [], toggles: {},
+      chg: {}, chgT: {},              // умения с зарядами (см. game/abilities)
       flash: 0, spin: 0, swing: 0, step: 0, castFx: 0,
       dead: false, xp: 0, pts: 0
     };

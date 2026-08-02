@@ -70,6 +70,7 @@ AA.module('game/combat', (function () {
 
     tgt.hp -= dmg;
     tgt.flash = tiny ? Math.max(tgt.flash, .18) : 1;
+    tgt.unseenT = 0;              // «его заметили»: сбрасывает покой (см. Хищник Глубин)
     if (src === w.hero) w.dmgWindow.push([w.time, dmg]);
 
     // талант «Шипы камня»: часть урона возвращается атакующему
@@ -151,11 +152,12 @@ AA.module('game/combat', (function () {
       w.kills++;
       w.gold += tgt.gold || 0;
       if (tgt.gold) fx.floatText(tgt.x, tgt.y - 28, '+' + tgt.gold, '#ffc043', 15);
-      rewardKillPassives();
+      rewardKillPassives(tgt);
       if (w.hero && !w.hero.dead) AA.Game.skinfx.onKill(w.hero, tgt);
       if (tgt.isBoss) { fx.shake(20); fx.flash('#fff', .3); fx.hitstop(.12); }
     } else if (tgt === w.hero) {
       fx.shake(22); SFX().lose(); fx.flash('#ff4d5e', .45); fx.hitstop(.18);
+      selfDeathPassives(tgt);
       w.over = true;
       AA.Game.loop.emitDeath();
     }
@@ -188,15 +190,25 @@ AA.module('game/combat', (function () {
   }
 
   /** Пассивки, которые срабатывают на убийство (Пир Мясника). */
-  function rewardKillPassives() {
+  /** @param {object} [victim] кто именно умер — пассивке может быть важно */
+  function rewardKillPassives(victim) {
     var h = W().hero;
     if (!h || h.dead || !h.skills) return;
     for (var i = 0; i < h.skills.length; i++) {
       var sk = h.skills[i], l = (h.skillLv[sk.id] || 0) - 1;
       if (l < 0 || !sk.onKill) continue;
-      var gainedStr = sk.onKill(h, l) || 0;
+      var gainedStr = sk.onKill(h, l, victim) || 0;
       AA.Game.stats.recalc(h);
       h.hp = Math.min(h.maxHp, h.hp + gainedStr * AA.Content.attributes.ATTR.HP_PER_STR);
+    }
+  }
+
+  /** Пассивки, которым есть что сказать в момент гибели героя. */
+  function selfDeathPassives(h) {
+    if (!h || !h.skills) return;
+    for (var i = 0; i < h.skills.length; i++) {
+      var sk = h.skills[i], l = (h.skillLv[sk.id] || 0) - 1;
+      if (l >= 0 && sk.onSelfDeath) sk.onSelfDeath(h, l);
     }
   }
 
@@ -207,6 +219,9 @@ AA.module('game/combat', (function () {
     u.atkCd -= dt;
     if (u.atkCd > 0 || B().isStunned(u) || u.leap) return;
     if (u.role === 'bomber' || u.role === 'healer' || u.role === 'dummy') return;
+    // в ужасе не дерутся, а бегут
+    var fr = B().get(u, 'fear');
+    if (fr && fr.fear) return;
 
     var m = M(), t;
     if (u.team === 1) {

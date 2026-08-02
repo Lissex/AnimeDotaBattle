@@ -165,6 +165,17 @@ AA.module('game/ai', (function () {
     }
 
     if (!target) { wander(u, dt); return; }
+
+    // ужас: цель разворачивается и бежит прочь, драться не может
+    var fear = AA.Game.buffs.get(u, 'fear');
+    if (fear && fear.fear) {
+      var af = m.angleTo(target, u);
+      u.face = af;
+      u.vx = Math.cos(af); u.vy = Math.sin(af);
+      if (Math.random() < dt * 6) FX().sparks(u.x, u.y - u.r, '#8a2ad8', 1);
+      return;
+    }
+
     if (u.role === 'healer') { healerLogic(u, dt, target); return; }
 
     var d = m.dist(u, target), a = m.angleTo(u, target);

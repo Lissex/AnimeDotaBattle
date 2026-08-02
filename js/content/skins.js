@@ -151,6 +151,30 @@ AA.module('content/skins', (function () {
         fx: 'trail', fxColor: '#e05aff', aura: 'rgba(224,90,255,.2)'
       }
     ],
+    lurker: [
+      { id: 'default', name: 'Хищник Глубин', tier: 0, cost: 0 },
+      {
+        id: 'tidecaller', name: 'Зов Прилива', tier: 1, cost: 2400,
+        palette: { skin: '#5aa89a', cloth: '#0a4a4a', armor: '#2a8a88', trim: '#7affe8' }
+      },
+      {
+        id: 'abyssking', name: 'ИММОРТАЛ · Владыка Впадины', tier: 2, ad: true,
+        palette: { skin: '#7ad8c8', cloth: '#04262e', armor: '#0fa8a0', trim: '#b0fff0' },
+        fx: 'trail', fxColor: '#5affd8', aura: 'rgba(90,255,216,.18)'
+      }
+    ],
+    reaper: [
+      { id: 'default', name: 'Жнец Душ', tier: 0, cost: 0 },
+      {
+        id: 'gravelord', name: 'Владыка Курганов', tier: 1, cost: 2400,
+        palette: { skin: '#4a2a68', cloth: '#160622', armor: '#8a2ae0', trim: '#e0a8ff' }
+      },
+      {
+        id: 'soulstorm', name: 'ИММОРТАЛ · Буря Душ', tier: 2, ad: true,
+        palette: { skin: '#5a3080', cloth: '#0c0416', armor: '#b02aff', trim: '#f0c8ff' },
+        fx: 'runes', fxColor: '#d08aff', aura: 'rgba(208,138,255,.2)'
+      }
+    ],
     golem: [
       { id: 'default', name: 'Голем', tier: 0, cost: 0 },
       {

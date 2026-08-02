@@ -12,6 +12,52 @@ AA.module('game/abilities', (function () {
     return Math.max(.5, base) * (1 - u.stats.cdr / 100);
   }
 
+  /* ================= умения с зарядами =================
+     Обычное умение блокируется перезарядкой целиком. Умение с
+     зарядами копит применения: перезарядка восстанавливает по
+     одному заряду, а потратить их можно хоть все подряд.
+
+     Умению достаточно объявить поле charges (сколько максимум) —
+     остальное считается здесь. Значения лежат в u.chg / u.chgT. */
+
+  function maxCharges(u, sk) {
+    return sk.charges + AA.Game.talents.chargeBonus(u, sk.id);
+  }
+
+  /** Сколько зарядов сейчас доступно. */
+  function charges(u, sk) {
+    if (!sk.charges) return 0;
+    var have = u.chg[sk.id];
+    return have === undefined ? maxCharges(u, sk) : have;
+  }
+
+  /** Время восстановления одного заряда. */
+  function rechargeTime(u, sk, lv) {
+    return cooldown(u, sk, lv);
+  }
+
+  /** Тик восстановления зарядов — по одному за перезарядку. */
+  function tickCharges(u, dt) {
+    if (!u.skills || !u.chg) return;
+    for (var i = 0; i < u.skills.length; i++) {
+      var sk = u.skills[i];
+      if (!sk.charges) continue;
+      var lv = (u.skillLv[sk.id] || 0) - 1;
+      if (lv < 0) continue;
+
+      var max = maxCharges(u, sk);
+      if (u.chg[sk.id] === undefined) u.chg[sk.id] = max;
+      if (u.chg[sk.id] >= max) { u.chg[sk.id] = max; u.chgT[sk.id] = 0; continue; }
+
+      u.chgT[sk.id] = Math.max(0, (u.chgT[sk.id] || 0) - dt);
+      if (u.chgT[sk.id] <= 0) {
+        u.chg[sk.id]++;
+        // копим дальше, пока не наберём полный запас
+        if (u.chg[sk.id] < max) u.chgT[sk.id] = rechargeTime(u, sk, lv);
+      }
+    }
+  }
+
   /**
    * Применить умение по индексу в списке героя.
    * @returns {boolean} получилось ли
@@ -36,6 +82,7 @@ AA.module('game/abilities', (function () {
     }
 
     if ((u.cds[sk.id] || 0) > 0) return false;
+    if (sk.charges && charges(u, sk) <= 0) return false;
 
     var cost = sk.mana[lv] || 0;
     if (u.mp < cost) { toast('Мало маны'); return false; }
@@ -46,7 +93,15 @@ AA.module('game/abilities', (function () {
     }
 
     u.mp -= cost;
-    u.cds[sk.id] = cooldown(u, sk, lv);
+    if (sk.charges) {
+      u.chg[sk.id] = charges(u, sk) - 1;
+      // счётчик запускается с первой тратой и дальше идёт сам
+      if (!u.chgT[sk.id]) u.chgT[sk.id] = rechargeTime(u, sk, lv);
+      // короткая заминка, чтобы весь запас не улетал за один кадр
+      u.cds[sk.id] = sk.chargeGap || .35;
+    } else {
+      u.cds[sk.id] = cooldown(u, sk, lv);
+    }
     u.castFx = .3;
     AA.Core.audio.cast();
     if (u === W().hero) AA.Game.skinfx.onCast(u);
@@ -152,6 +207,7 @@ AA.module('game/abilities', (function () {
 
   return {
     cast: cast, cooldown: cooldown,
+    charges: charges, maxCharges: maxCharges, tickCharges: tickCharges,
     addReagent: addReagent, castInvoke: castInvoke,
     elemLevel: elemLevel, invokePower: invokePower, currentSpell: currentSpell,
     tickCooldowns: tickCooldowns, tickSkills: tickSkills, activeIndex: activeIndex

@@ -47,6 +47,16 @@ AA.module('game/talents', (function () {
     return sum;
   }
 
+  /** Прибавка к максимуму зарядов умения. */
+  function chargeBonus(u, skillId) {
+    var list = chosen(u), sum = 0;
+    for (var i = 0; i < list.length; i++) {
+      var c = list[i].charge;
+      if (c && c.skill === skillId) sum += c.plus;
+    }
+    return sum;
+  }
+
   /** Ждёт ли герой выбора таланта. */
   function pending(u) {
     if (!u || !u.defId) return 0;
@@ -63,6 +73,6 @@ AA.module('game/talents', (function () {
 
   return {
     has: has, chosen: chosen, applyStats: applyStats,
-    cdBonus: cdBonus, pending: pending, choose: choose
+    cdBonus: cdBonus, chargeBonus: chargeBonus, pending: pending, choose: choose
   };
 })());

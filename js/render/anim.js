@@ -24,7 +24,9 @@ AA.module('render/anim', (function () {
     nimble: { bobA: 2.0, bobF: 1.8, hover: 2, lean: .08 },   // Дриада
     orbit: { bobA: 3.6, bobF: .8, hover: 10, lean: 0 },     // Аркан
     flame: { bobA: 3.0, bobF: 1.1, hover: 6, lean: 0 },     // Пиромант
-    stone: { bobA: 1.2, bobF: .6, hover: 0, lean: .1 }      // Голем
+    stone: { bobA: 1.2, bobF: .6, hover: 0, lean: .1 },     // Голем
+    prowl: { bobA: 1.1, bobF: 3.1, hover: 0, lean: .26 },    // Хищник Глубин
+    drift: { bobA: 4.0, bobF: .75, hover: 12, lean: 0 }      // Жнец Душ
   };
 
   /** Сколько длится фаза удара — общая для всех, чтобы кадры совпадали. */

@@ -387,7 +387,11 @@ AA.module('render/icons', (function () {
     /* --- Демон Клинков --- */
     reflection: 'mask', splinter: 'spiral', metamorph: 'wing', sunder: 'clock',
     /* --- Зодчий Пустоты --- */
-    curse: 'ring', sacrifice: 'skull', singularity: 'spiral', gravity: 'swirl'
+    curse: 'ring', sacrifice: 'skull', singularity: 'spiral', gravity: 'swirl',
+    /* --- Хищник Глубин --- */
+    darkpact: 'swirl', pounce: 'thorn', shadowdance: 'cloud', essence: 'drop',
+    /* --- Жнец Душ --- */
+    rend: 'bolt', soulfeast: 'heart', requiem: 'star', harvest: 'skull'
   };
 
   /* ------------------------------------------------------------

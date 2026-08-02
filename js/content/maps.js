@@ -102,6 +102,22 @@ AA.module('content/maps', (function () {
         ['crack', 7]
       ]
     },
+    lurker: {
+      name: 'Затонувший риф', floor: '#152e30', floor2: '#061214', accent: '#3ad8c0',
+      tint: 'rgba(40,140,140,.15)', weather: 'fireflies',
+      props: [
+        ['crystal', 6], ['rock', 7], ['ruin', 4], ['stump', 3],
+        ['puddle', 12], ['grass', 14], ['crack', 5]
+      ]
+    },
+    reaper: {
+      name: 'Поле Безымянных', floor: '#241a2e', floor2: '#0a0612', accent: '#8a2ad8',
+      tint: 'rgba(100,40,170,.15)', weather: 'ash',
+      props: [
+        ['obelisk', 7], ['ruin', 6], ['pillar', 4], ['brazier', 3],
+        ['bones', 20], ['crack', 8]
+      ]
+    },
     training: {
       name: 'Учебный полигон', floor: '#1c2436', floor2: '#0a0e16', accent: '#3ddb7f',
       tint: 'rgba(60,140,110,.10)', weather: 'dust',
@@ -112,7 +128,8 @@ AA.module('content/maps', (function () {
   /** Порядок смены арен после каждого босса. Полигон не участвует. */
   var ROTATION = [
     'butcher', 'ranger', 'berserk', 'frost', 'knight',
-    'shadow', 'dryad', 'arcanist', 'demon', 'enigma', 'pyro', 'golem'
+    'shadow', 'lurker', 'dryad', 'arcanist', 'demon', 'enigma',
+    'reaper', 'pyro', 'golem'
   ];
 
   return {

@@ -69,6 +69,14 @@ AA.module('render/shapes', (function () {
     void: {
       skin: '#2a2038', cloth: '#1a1030', armor: '#5a3ab0', trim: '#a08aff',
       helm: 'voidcrown', torso: 'robe', weapon: 'voidorb', cape: true, bulk: .94
+    },
+    lurker: {
+      skin: '#4a8a7a', cloth: '#0e3a3a', armor: '#1f6a68', trim: '#5affd8',
+      helm: 'finned', torso: 'leather', weapon: 'clawblade', cape: false, bulk: .88
+    },
+    reaper: {
+      skin: '#3a2050', cloth: '#1a0828', armor: '#6a2ab0', trim: '#d08aff',
+      helm: 'skullcrown', torso: 'robe', weapon: 'soulscythe', cape: true, bulk: .92
     }
   };
 
@@ -580,7 +588,9 @@ AA.module('render/shapes', (function () {
   }
 
   function face(ctx, s, kit, u, t) {
-    if (kit.helm === 'greathelm' || kit.helm === 'stone') return;   // лицо закрыто
+    // лицо закрыто наглухо либо заменено самой головой
+    if (kit.helm === 'greathelm' || kit.helm === 'stone' ||
+      kit.helm === 'finned' || kit.helm === 'skullcrown') return;
 
     var eyeY = -20 * s;
     var open = kit.helm === 'mask' ? .55 : 1;
@@ -809,6 +819,87 @@ AA.module('render/shapes', (function () {
         ctx.shadowBlur = 0;
         break;
 
+      case 'finned':                                    // гребень и жабры хищника
+        ctx.fillStyle = shadeColor(kit.skin, 1.15);
+        ctx.beginPath();
+        ctx.ellipse(.6 * s, -19.5 * s, hr * .88, hr * .96, 0, 0, 6.2832);
+        ctx.fill();
+        outline(ctx, 1.4);
+
+        // спинной гребень: три пластины, задняя длиннее
+        ctx.fillStyle = tint(kit.armor);
+        for (var fn = 0; fn < 3; fn++) {
+          var fx2 = -1.4 * s - fn * 2.6 * s;
+          var fh2 = (7 + fn * 2.6) * s;
+          ctx.beginPath();
+          ctx.moveTo(fx2, -24 * s);
+          ctx.quadraticCurveTo(fx2 - 2 * s, -24 * s - fh2, fx2 - 4.4 * s, -22 * s);
+          ctx.quadraticCurveTo(fx2 - 2 * s, -23 * s, fx2, -24 * s);
+          ctx.fill();
+        }
+
+        // жаберные щели
+        ctx.strokeStyle = shadeColor(kit.cloth, .7);
+        ctx.lineWidth = 1.1;
+        for (var gi = 0; gi < 3; gi++) {
+          ctx.beginPath();
+          ctx.moveTo(4.4 * s, (-21 + gi * 2.2) * s);
+          ctx.lineTo(6.6 * s, (-20.4 + gi * 2.2) * s);
+          ctx.stroke();
+        }
+
+        // узкие светящиеся глаза глубоководного
+        ctx.fillStyle = kit.trim;
+        ctx.shadowColor = kit.trim; ctx.shadowBlur = 10;
+        ctx.beginPath();
+        ctx.ellipse(2.4 * s, -20.4 * s, 2.2 * s, .9 * s, -.16, 0, 6.2832);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.ellipse(-2.6 * s, -20.2 * s, 1.5 * s, .8 * s, -.16, 0, 6.2832);
+        ctx.fill();
+        ctx.shadowBlur = 0;
+        break;
+
+      case 'skullcrown':                                // череп в венце из душ
+        ctx.fillStyle = '#e8e0d0';
+        ctx.beginPath();
+        ctx.ellipse(.6 * s, -20 * s, hr * .82, hr * .9, 0, 0, 6.2832);
+        ctx.fill();
+        outline(ctx, 1.4);
+        // челюсть
+        ctx.fillStyle = '#cfc4b0';
+        ctx.beginPath();
+        ctx.moveTo(-3.6 * s, -16.4 * s);
+        ctx.lineTo(4.8 * s, -16.4 * s);
+        ctx.lineTo(3.4 * s, -12.6 * s);
+        ctx.lineTo(-2.4 * s, -12.6 * s);
+        ctx.closePath(); ctx.fill();
+        ctx.strokeStyle = '#8a7f6a'; ctx.lineWidth = .8;
+        for (var tj = 0; tj < 4; tj++) {
+          ctx.beginPath();
+          ctx.moveTo((-2.6 + tj * 1.9) * s, -16.4 * s);
+          ctx.lineTo((-2.6 + tj * 1.9) * s, -13 * s);
+          ctx.stroke();
+        }
+        // пустые глазницы с огнём внутри
+        ctx.fillStyle = '#120a1c';
+        ctx.beginPath(); ctx.ellipse(-2 * s, -21 * s, 2.1 * s, 2.4 * s, 0, 0, 6.2832); ctx.fill();
+        ctx.beginPath(); ctx.ellipse(3.4 * s, -21 * s, 2.1 * s, 2.4 * s, 0, 0, 6.2832); ctx.fill();
+        ctx.fillStyle = kit.trim;
+        ctx.shadowColor = kit.trim; ctx.shadowBlur = 12;
+        ctx.beginPath(); ctx.arc(-2 * s, -21 * s, 1 * s, 0, 6.2832); ctx.fill();
+        ctx.beginPath(); ctx.arc(3.4 * s, -21 * s, 1 * s, 0, 6.2832); ctx.fill();
+        // венец: рожки по кругу
+        for (var ci = -2; ci <= 2; ci++) {
+          ctx.beginPath();
+          ctx.moveTo(.6 * s + ci * 3 * s - .7 * s, -25.6 * s);
+          ctx.lineTo(.6 * s + ci * 3 * s, (-30 + Math.abs(ci) * 1.4) * s);
+          ctx.lineTo(.6 * s + ci * 3 * s + .7 * s, -25.6 * s);
+          ctx.closePath(); ctx.fill();
+        }
+        ctx.shadowBlur = 0;
+        break;
+
       case 'stone':                                     // каменная голова
         ctx.fillStyle = tint(kit.armor);
         ctx.beginPath();
@@ -1026,6 +1117,72 @@ AA.module('render/shapes', (function () {
         ctx.quadraticCurveTo(9 * s, 2.4 * s, 0, 0);
         ctx.fill();
         ctx.shadowBlur = 0;
+        break;
+
+      case 'clawblade':                                 // костяной коготь-серп
+        ctx.fillStyle = '#dff3ea';
+        ctx.shadowColor = kit.trim;
+        ctx.shadowBlur = u.essenceStacks ? 6 + Math.min(14, u.essenceStacks * .5) : 5;
+        ctx.beginPath();
+        ctx.moveTo(0, -2.6 * s);
+        ctx.quadraticCurveTo(10 * s, -7 * s, 17 * s, -1 * s);
+        ctx.quadraticCurveTo(11 * s, -2.6 * s, 0, .6 * s);
+        ctx.fill();
+        // вторая, короткая пластина у запястья
+        ctx.beginPath();
+        ctx.moveTo(0, 1.6 * s);
+        ctx.quadraticCurveTo(6 * s, 5.4 * s, 10 * s, 1.6 * s);
+        ctx.quadraticCurveTo(6 * s, 1.4 * s, 0, 0);
+        ctx.fill();
+        // накопленная сущность светится по кромке
+        if (u.essenceStacks) {
+          ctx.strokeStyle = kit.trim;
+          ctx.lineWidth = 1.2;
+          ctx.globalAlpha = Math.min(.9, .25 + u.essenceStacks * .025);
+          ctx.beginPath();
+          ctx.moveTo(1 * s, -2.2 * s);
+          ctx.quadraticCurveTo(10 * s, -6.4 * s, 16.4 * s, -1.2 * s);
+          ctx.stroke();
+          ctx.globalAlpha = 1;
+        }
+        ctx.shadowBlur = 0;
+        break;
+
+      case 'soulscythe':                                // коса из душ
+        ctx.strokeStyle = '#2a1a3a';                    // древко
+        ctx.lineWidth = 2.2 * s;
+        ctx.lineCap = 'round';
+        ctx.beginPath();
+        ctx.moveTo(-7 * s, 3 * s); ctx.lineTo(16 * s, -5 * s);
+        ctx.stroke();
+
+        ctx.fillStyle = kit.trim;
+        ctx.shadowColor = kit.trim;
+        ctx.shadowBlur = 12 + Math.sin(t * 3) * 4;
+        ctx.beginPath();                                // лезвие
+        ctx.moveTo(16 * s, -5 * s);
+        ctx.quadraticCurveTo(24 * s, -12 * s, 22 * s, -19 * s);
+        ctx.quadraticCurveTo(18 * s, -12 * s, 14 * s, -7 * s);
+        ctx.closePath();
+        ctx.fill();
+        ctx.shadowBlur = 0;
+
+        // души на орбите: столько, сколько накоплено (до восьми в кадре)
+        var sn = Math.min(8, u.souls || 0);
+        if (sn) {
+          ctx.save();
+          ctx.globalCompositeOperation = 'lighter';
+          for (var si = 0; si < sn; si++) {
+            var sa = t * 1.1 + si / sn * 6.2832;
+            var sr = 13 * s;
+            ctx.fillStyle = 'rgba(200,138,255,.85)';
+            ctx.beginPath();
+            ctx.arc(4 * s + Math.cos(sa) * sr, Math.sin(sa) * sr * .5 - 4 * s,
+              1.5 * s, 0, 6.2832);
+            ctx.fill();
+          }
+          ctx.restore();
+        }
         break;
 
       case 'fists':                                     // каменный кулак

@@ -101,6 +101,7 @@ AA.module('game/loop', (function () {
       u.mp = Math.min(u.maxMp, u.mp + u.stats.mpReg * dt);
 
       AA.Game.abilities.tickCooldowns(u, dt);
+      AA.Game.abilities.tickCharges(u, dt);
       AA.Game.abilities.tickSkills(u, dt);
 
       if (!B.isStunned(u)) AA.Game.combat.autoAttack(u, dt);
