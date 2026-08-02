@@ -79,6 +79,16 @@
 }
 @keyframes pts-pulse{0%,100%{opacity:1}50%{opacity:.45}}
 
+/* запас душ Жнеца — не мигает, это счётчик, а не напоминание */
+.soul-dot{
+  display:inline-flex;align-items:center;justify-content:center;min-width:18px;height:16px;
+  padding:0 5px;border-radius:8px;margin-left:4px;
+  background:rgba(138,42,216,.9);border:1px solid #c08aff;color:#fff;
+  font-size:10px;font-weight:900;
+  box-shadow:0 0 10px rgba(192,138,255,.5);
+}
+.soul-dot::before{content:"☾";margin-right:3px;font-size:9px;opacity:.85}
+
 .bar{
   position:relative;height:13px;border-radius:7px;background:rgba(0,0,0,.55);
   border:1px solid var(--line);overflow:hidden;margin-bottom:3px;
@@ -180,6 +190,16 @@
   position:absolute;inset:0;background:rgba(0,0,0,.72);z-index:3;
   display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:900;
 }
+/* счётчик зарядов: сколько применений в запасе прямо сейчас */
+.sb .chg{
+  position:absolute;right:2px;bottom:1px;z-index:4;
+  min-width:14px;height:14px;padding:0 3px;border-radius:7px;
+  display:flex;align-items:center;justify-content:center;
+  background:rgba(10,14,26,.9);border:1px solid var(--acc);
+  font-size:10px;font-weight:900;color:#fff;
+}
+.sb .chg.empty{border-color:var(--line);color:var(--dim)}
+
 .sb.ready{border-color:#fff;box-shadow:0 0 14px rgba(255,255,255,.25)}
 .sb.nomana{filter:grayscale(.7) brightness(.7)}
 .sb.toggled{outline:2px solid #fff;outline-offset:-2px}

@@ -68,6 +68,7 @@ AA.module('ui/screens', (function () {
 
     AA.UI.skillbar.build();
     AA.UI.training.setVisible(!!training);
+    AA.UI.hud.reset();                 // кэш HUD от прошлого забега не годится
     AA.UI.hud.refresh(true);
     AA.UI.controls.setAuto(false);
 

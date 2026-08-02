@@ -17,7 +17,8 @@
 
   /** Дебаффы, которые снимает Тёмный договор. */
   var DEBUFFS = ['slow', 'freeze', 'root', 'venom', 'ignite', 'hex',
-    'chill', 'acid', 'plague', 'burn', 'bleed'];
+    'chill', 'acid', 'plague', 'fear', 'leash', 'drained',
+    'miasma', 'timewarp', 'rendshred', 'dreadaura'];
 
   S.add({
 
@@ -86,18 +87,21 @@
         var dur = self.dur[l] + (a.talent(u, 'lu_leash_long') ? 1.5 : 0);
         var hunter = a.talent(u, 'lu_nighthunter');
 
+        var w = AA.Game.world.state;
         var ang = u.face || 0;
-        var tx = u.x + Math.cos(ang) * self.dist;
-        var ty = u.y + Math.sin(ang) * self.dist;
+        var sx = u.x, sy = u.y;
+        // лететь можно сквозь камни, но не за край арены
+        var tx = Math.max(w.PAD + u.r, Math.min(w.w - w.PAD - u.r, sx + Math.cos(ang) * self.dist));
+        var ty = Math.max(w.PAD + u.r, Math.min(w.h - w.PAD - u.r, sy + Math.sin(ang) * self.dist));
 
-        a.burst(u.x, u.y, '#3ad8e8', 18);
+        a.burst(sx, sy, '#3ad8e8', 18);
 
         a.leapTo(u, tx, ty, .34, function () {
           a.ring(u.x, u.y, 120, '#3ad8e8');
           a.sparks(u.x, u.y, '#3ad8e8', 14);
 
-          // цепляем ближайшего в радиусе захвата
-          var t = a.nearestEnemy(u, self.grab);
+          // цепляем первого, кто оказался на линии полёта
+          var t = onPath(u, sx, sy, tx, ty, self.grab);
           if (!t) return;
           leash(u, t, dur, self.leash, a);
         });
@@ -213,11 +217,24 @@
           }
         }
 
-        // дыхание глубин: пока вас не трогают или вы в тени
+        /* --- дыхание глубин: пока вас не трогают или вы в тени --- */
         u.unseenT = (u.unseenT || 0) + dt;
         var hidden = a.hasBuff(u, 'invis') || u.unseenT >= this.idleAfter;
-        if (!hidden || u.hp >= u.maxHp) return;
 
+        // прибавку к скорости вешаем баффом, но трогаем его только
+        // на переключении — иначе пересчёт характеристик каждый кадр
+        if (hidden !== !!u._prowling) {
+          u._prowling = hidden;
+          if (hidden) {
+            a.buff(u, {
+              id: 'prowl', dur: 999, msMul: 1 + this.idleMs / 100, color: '#3ddb7f'
+            });
+          } else {
+            a.removeBuff(u, 'prowl');
+          }
+        }
+
+        if (!hidden || u.hp >= u.maxHp) return;
         // в танце регенерация своя, сильнее — не складываем
         if (a.hasBuff(u, 'shadowdance')) return;
 
@@ -228,6 +245,32 @@
   });
 
   /* ---------------- вспомогательное ---------------- */
+
+  /**
+   * Первый враг на отрезке полёта: считаем расстояние до линии,
+   * а из подходящих берём того, кто ближе к началу прыжка.
+   */
+  function onPath(u, x1, y1, x2, y2, grab) {
+    var w = AA.Game.world.state;
+    var dx = x2 - x1, dy = y2 - y1;
+    var len2 = dx * dx + dy * dy || 1;
+    var best = null, bestT = 2;
+
+    for (var i = 0; i < w.units.length; i++) {
+      var e = w.units[i];
+      if (e.dead || e.team === u.team) continue;
+
+      var t = ((e.x - x1) * dx + (e.y - y1) * dy) / len2;
+      t = t < 0 ? 0 : t > 1 ? 1 : t;
+      var px = x1 + dx * t, py = y1 + dy * t;
+      var ddx = e.x - px, ddy = e.y - py;
+
+      var reach = grab + e.r;
+      if (ddx * ddx + ddy * ddy > reach * reach) continue;
+      if (t < bestT) { bestT = t; best = e; }
+    }
+    return best;
+  }
 
   /** Снять с героя весь контроль. */
   function cleanse(u, a) {
@@ -246,7 +289,7 @@
       color: '#3ddb7f'
     });
 
-    u.essenceStacks = Math.min(40, (u.essenceStacks || 0) + n);
+    u.essenceStacks = Math.min(S.get('essence').maxStacks, (u.essenceStacks || 0) + n);
     u.essenceT = dur;
     AA.Game.stats.recalc(u);
 

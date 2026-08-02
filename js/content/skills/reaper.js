@@ -158,7 +158,9 @@
       cast: function (u, l) {
         var a = g(), self = this;
         var n = souls(u);
-        if (n < 2) { a.toast('Слишком мало душ'); return false; }
+        if (n < 4) { a.toast('Слишком мало душ'); return false; }
+        // автобою нельзя разряжать запас на первой же паре мобов
+        if (AA.Game.world.state.auto && n < soulCap(u) * .6) return false;
 
         var dmg = self.dmg[l] + u.stats.sp * .8;
         var wave = a.talent(u, 'rp_double_wave');   // «Отражённый хор»

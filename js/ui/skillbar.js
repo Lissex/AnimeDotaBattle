@@ -20,7 +20,8 @@ AA.module('ui/skillbar', (function () {
       b.appendChild(AA.Render.icons.element(s.type === 'reagent' ? 46 : 52, s.id, s.color));
       b.insertAdjacentHTML('beforeend',
         '<span class="key">' + slot + '</span>' +
-        '<div class="cd" style="display:none"></div>');
+        '<div class="cd" style="display:none"></div>' +
+        (s.charges ? '<span class="chg" style="display:none">0</span>' : ''));
       b.dataset.idx = i;
       b.addEventListener('pointerdown', function (ev) {
         ev.preventDefault();
@@ -66,12 +67,27 @@ AA.module('ui/skillbar', (function () {
         b.classList.remove('ready');
         return;
       }
+      // у зарядного умения на кнопке два числа: сколько осталось
+      // применений и сколько ждать до следующего заряда
+      var free = 1;
+      if (s.charges) {
+        var A = AA.Game.abilities;
+        free = A.charges(h, s);
+        var chip = b.querySelector('.chg');
+        if (chip) {
+          chip.style.display = '';
+          chip.textContent = free;
+          chip.classList.toggle('empty', free <= 0);
+        }
+        cd = free < A.maxCharges(h, s) ? (h.chgT[s.id] || 0) : 0;
+      }
+
       if (cd > 0) { badge.style.display = 'flex'; badge.textContent = cd.toFixed(cd < 3 ? 1 : 0); }
       else badge.style.display = 'none';
 
       var noMana = h.mp < (s.mana[lv] || 0);
       b.classList.toggle('nomana', noMana);
-      b.classList.toggle('ready', cd <= 0 && !noMana);
+      b.classList.toggle('ready', free > 0 && (h.cds[s.id] || 0) <= 0 && !noMana);
       b.classList.toggle('toggled', s.type === 'toggle' && !!h.toggles[s.id]);
     });
 

@@ -44,6 +44,15 @@ AA.module('ui/hud', (function () {
       d.$('hud-skillpts').style.display = h.pts > 0 ? '' : 'none';
       cache.pts = h.pts;
     }
+    // счётчик душ Жнеца: его главный ресурс должен быть на виду
+    if (cache.souls !== h.souls) {
+      var chip = d.$('hud-souls-run');
+      var n = h.souls || 0;
+      chip.textContent = n;
+      chip.style.display = (h.defId === 'reaper' && n > 0) ? '' : 'none';
+      cache.souls = h.souls;
+    }
+
     if (w.training) set('hud-dps', d.fmt(Math.round(w.dps)), 'dps');
 
     if (full) {
