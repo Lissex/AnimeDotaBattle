@@ -22,6 +22,8 @@ AA.module('render/units', (function () {
 
     ctx.save();
     ctx.globalAlpha = B().isInvisible(u) ? (isHero ? .3 : .25) : 1;
+    // копии полупрозрачные — чтобы не путать их с оригиналом
+    if (u.isIllusion) ctx.globalAlpha *= u.invuln ? .5 : .72;
 
     if (u.isBoss) bossAura(ctx, u, y, m);
     buffGlow(ctx, u, y, m);
@@ -53,6 +55,7 @@ AA.module('render/units', (function () {
     }
     ctx.restore();
 
+    if (u.isIllusion) illusionMark(ctx, u, y, w);
     statusRings(ctx, u, y, w);
     if (u !== w.hero) healthBar(ctx, u, y, m);
   }
@@ -108,6 +111,29 @@ AA.module('render/units', (function () {
 
     if (B().has(u, 'venom')) emit(u, '#7ac043');
     if (B().has(u, 'ignite')) emit(u, '#ffb03a');
+  }
+
+  /** Метка копии: пунктирный контур и подпись у неуязвимой. */
+  function illusionMark(ctx, u, y, w) {
+    ctx.save();
+    ctx.globalAlpha = .55;
+    ctx.strokeStyle = u.invuln ? '#a05ad8' : '#6a8ae8';
+    ctx.lineWidth = 1.6;
+    ctx.setLineDash([5, 5]);
+    ctx.lineDashOffset = -w.time * 18;
+    ctx.beginPath(); ctx.arc(u.x, y, u.r + 5, 0, 6.2832); ctx.stroke();
+    ctx.restore();
+
+    if (!u.invuln) return;
+    ctx.save();
+    ctx.globalAlpha = .8;
+    ctx.textAlign = 'center';
+    ctx.font = '900 9px "Trebuchet MS",sans-serif';
+    ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(0,0,0,.8)';
+    ctx.strokeText('НЕУЯЗВИМА', u.x, y - u.r - 26);
+    ctx.fillStyle = '#a05ad8';
+    ctx.fillText('НЕУЯЗВИМА', u.x, y - u.r - 26);
+    ctx.restore();
   }
 
   function ring(ctx, u, y, color, offset) {

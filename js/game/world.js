@@ -11,9 +11,13 @@ AA.module('game/world', (function () {
   ];
 
   var W = {
-    /* --- размеры арены (заполняет render/canvas) --- */
-    w: 0, h: 0,
-    PAD: 46,     // отступ от края холста
+    /* --- размеры мира (заполняет render/canvas) ---
+       Мир заметно больше экрана: камера ездит за героем,
+       врагов и руны видно не сразу. */
+    w: 0, h: 0,              // размер арены в игровых координатах
+    view: { w: 0, h: 0 },    // видимая область (размер холста)
+    cam: { x: 0, y: 0 },     // левый верхний угол камеры в мире
+    PAD: 46,     // отступ от края арены
     TOP: 54,     // место под верхнюю панель HUD
 
     /* --- карта --- */
@@ -53,7 +57,20 @@ AA.module('game/world', (function () {
   function confine(u) {
     var c = AA.Core.math.clamp;
     u.x = c(u.x, W.PAD + u.r, W.w - W.PAD - u.r);
-    u.y = c(u.y, W.PAD + W.TOP + u.r, W.h - W.PAD - u.r);
+    u.y = c(u.y, W.PAD + u.r, W.h - W.PAD - u.r);
+  }
+
+  /** Экранные координаты → мировые (курсор мыши). */
+  function toWorld(sx, sy) { return { x: sx + W.cam.x, y: sy + W.cam.y }; }
+
+  /** Мировые → экранные (для миникарты и отладки). */
+  function toScreen(wx, wy) { return { x: wx - W.cam.x, y: wy - W.cam.y }; }
+
+  /** Видна ли точка в кадре (с запасом). */
+  function onScreen(x, y, pad) {
+    pad = pad || 80;
+    return x > W.cam.x - pad && x < W.cam.x + W.view.w + pad &&
+      y > W.cam.y - pad && y < W.cam.y + W.view.h + pad;
   }
 
   return {
@@ -62,6 +79,7 @@ AA.module('game/world', (function () {
     clearPools: clearPools,
     aliveEnemies: aliveEnemies,
     confine: confine,
-    center: function () { return { x: W.w / 2, y: (W.h + W.TOP) / 2 }; }
+    toWorld: toWorld, toScreen: toScreen, onScreen: onScreen,
+    center: function () { return { x: W.w / 2, y: W.h / 2 }; }
   };
 })());

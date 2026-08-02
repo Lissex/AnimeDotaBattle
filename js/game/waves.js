@@ -5,16 +5,20 @@ AA.module('game/waves', (function () {
   function W() { return AA.Game.world.state; }
   function M() { return AA.Core.math; }
 
-  /** Ставит юнита на край арены, стараясь не попасть в препятствие. */
+  /** Ставит юнита на кольце вокруг героя, сразу за краем кадра.
+      В большом мире спавн по краям арены был бы слишком далеко. */
   function placeAtEdge(u) {
-    var w = W(), m = M(), side = Math.floor(Math.random() * 4), tries = 0;
-    do {
-      if (side === 0) { u.x = m.rnd(w.PAD, w.w - w.PAD); u.y = w.PAD + w.TOP + 10; }
-      else if (side === 1) { u.x = m.rnd(w.PAD, w.w - w.PAD); u.y = w.h - w.PAD; }
-      else if (side === 2) { u.x = w.PAD; u.y = m.rnd(w.PAD + w.TOP, w.h - w.PAD); }
-      else { u.x = w.w - w.PAD; u.y = m.rnd(w.PAD + w.TOP, w.h - w.PAD); }
-      side = (side + 1) % 4;
-    } while (AA.Game.terrain.blocked(u.x, u.y, u.r) && tries++ < 8);
+    var w = W(), m = M(), h = w.hero;
+    var cx = h ? h.x : w.w / 2, cy = h ? h.y : w.h / 2;
+    var radius = Math.sqrt(w.view.w * w.view.w + w.view.h * w.view.h) * .56;
+
+    for (var tries = 0; tries < 14; tries++) {
+      var a = m.rnd(0, 6.2832);
+      var d = radius * m.rnd(1, 1.18);
+      u.x = m.clamp(cx + Math.cos(a) * d, w.PAD + u.r, w.w - w.PAD - u.r);
+      u.y = m.clamp(cy + Math.sin(a) * d, w.PAD + u.r, w.h - w.PAD - u.r);
+      if (!AA.Game.terrain.blocked(u.x, u.y, u.r)) break;
+    }
     AA.Game.world.confine(u);
     AA.Game.effects.ring(u.x, u.y, 46, '#ff4d5e');
   }
@@ -88,6 +92,7 @@ AA.module('game/waves', (function () {
       AA.Game.world.confine(w.hero);
       AA.Game.terrain.collide(w.hero);
     }
+    AA.Game.camera.snap();
     // зоны и снаряды со старой арены больше не действуют
     ['proj', 'zones', 'walls', 'tele', 'runes'].forEach(function (k) { w[k].length = 0; });
 
@@ -99,11 +104,12 @@ AA.module('game/waves', (function () {
 
   /* ================= учебный полигон ================= */
   function setupTraining() {
-    var w = W(), c = AA.Game.world.center();
+    var w = W(), h = w.hero, c = AA.Game.world.center();
+    var cx = h ? h.x : c.x, cy = h ? h.y : c.y;
     for (var i = 0; i < 3; i++) {
       var d = AA.Game.factory.dummy();
-      d.x = c.x + (i - 1) * 130;
-      d.y = c.y - 150;
+      d.x = cx + (i - 1) * 150;
+      d.y = cy - 190;
       AA.Game.world.confine(d);
       w.units.push(d);
     }

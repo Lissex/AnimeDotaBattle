@@ -42,8 +42,8 @@ AA.module('ui/shop', (function () {
         var el = d.el('div', 'isl' + (item ? ' full' : '') + (selectedSlot === idx ? ' sel' : ''));
         if (item) {
           el.style.borderColor = R[item.t].c;
-          el.style.background = 'linear-gradient(180deg,' + R[item.t].c + '2e,rgba(0,0,0,.4))';
-          el.textContent = item.name.split(' ')[0];
+          el.appendChild(AA.Render.icons.element(52, item.id, R[item.t].c));
+          el.title = item.name + ' — ' + item.d;
           el.onclick = function () {
             selectedSlot = selectedSlot === idx ? -1 : idx;
             renderInventory();
@@ -118,11 +118,19 @@ AA.module('ui/shop', (function () {
 
         var card = d.el('div', 'item ' + (owned ? 'owned' : (can ? 'can' : 'cant')));
         card.style.borderColor = owned ? '#3ddb7f' : color + (can ? 'aa' : '44');
-        card.innerHTML =
-          '<b style="color:' + color + '">' + it.name + '</b>' +
+
+        var head = d.el('div', 'item-head');
+        var ico = d.el('div', 'item-ico');
+        ico.appendChild(AA.Render.icons.element(38, it.id, color, color));
+        head.appendChild(ico);
+        head.appendChild(d.el('b', null, it.name));
+        head.firstChild.nextSibling.style.color = color;
+        card.appendChild(head);
+
+        card.insertAdjacentHTML('beforeend',
           '<p>' + it.d + '</p>' +
           '<div class="price"><span class="ic ic-gold"></span>' +
-          (owned ? 'куплено' : d.fmt(it.cost)) + '</div>';
+          (owned ? 'куплено' : d.fmt(it.cost)) + '</div>');
 
         if (can) {
           card.onclick = function () {

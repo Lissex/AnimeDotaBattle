@@ -129,9 +129,10 @@ AA.module('ui/controls', (function () {
     var canvas = d.$('cv');
     var held = false;
 
+    // экранная точка → мировая: камера ездит, поэтому без сдвига никак
     function toWorld(e) {
       var r = canvas.getBoundingClientRect();
-      return { x: e.clientX - r.left, y: e.clientY - r.top };
+      return AA.Game.world.toWorld(e.clientX - r.left, e.clientY - r.top);
     }
 
     /** Враг под курсором с запасом на промах. */

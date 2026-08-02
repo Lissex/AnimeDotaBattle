@@ -417,7 +417,7 @@ AA.module('render/fx', (function () {
     if (!cfg) return;
     for (var i = 0; i < cfg.count; i++) {
       flakes.push({
-        x: m.rnd(0, w.w), y: m.rnd(0, w.h),
+        x: m.rnd(0, w.view.w), y: m.rnd(0, w.view.h),
         r: m.rnd(cfg.size[0], cfg.size[1]),
         vy: m.rnd(cfg.vy[0], cfg.vy[1]),
         vx: m.rnd(cfg.vx[0], cfg.vx[1]),
@@ -441,11 +441,11 @@ AA.module('render/fx', (function () {
       f.y += f.vy * dt;
       f.x += (f.vx + Math.sin(w.time * 1.2 + f.p) * cfg.sway) * dt;
 
-      // заворачиваем по краям, чтобы поток был бесконечным
-      if (f.y > w.h + 10) { f.y = -10; f.x = m.rnd(0, w.w); }
-      if (f.y < -10) { f.y = w.h + 10; f.x = m.rnd(0, w.w); }
-      if (f.x > w.w + 10) f.x = -10;
-      if (f.x < -10) f.x = w.w + 10;
+      // взвесь живёт в экранных координатах и заворачивается по краям кадра
+      if (f.y > w.view.h + 10) { f.y = -10; f.x = m.rnd(0, w.view.w); }
+      if (f.y < -10) { f.y = w.view.h + 10; f.x = m.rnd(0, w.view.w); }
+      if (f.x > w.view.w + 10) f.x = -10;
+      if (f.x < -10) f.x = w.view.w + 10;
 
       var alpha = cfg.alpha;
       if (cfg.blink) alpha *= .35 + Math.abs(Math.sin(w.time * 2 + f.p)) * .65;

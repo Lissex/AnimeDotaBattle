@@ -83,6 +83,15 @@ AA.module('content/heroes', (function () {
       skills: ['firewave', 'ignite', 'flameaura', 'innerheat']
     },
     {
+      id: 'demon', name: 'Демон Клинков', role: 'КЕРРИ · ИЛЛЮЗИИ', cost: 3800,
+      shape: 'demon', anim: 'swift', c1: '#a05ad8', c2: '#2a0f3a', primary: 'agi',
+      tip: 'Дерётся чужими руками: копии бьют за него, а метаморфоза превращает ' +
+        'его и всех копий в дальнобойных чудовищ. Слаб в начале, страшен к концу.',
+      attr: { str: 15, agi: 22, int: 15 }, gain: { str: 1.7, agi: 4.4, int: 1.6 },
+      base: { atk: 24, armor: 2, ms: 315, as: .84, range: 70, mr: .25 },
+      skills: ['reflection', 'splinter', 'metamorph', 'sunder']
+    },
+    {
       id: 'golem', name: 'Голем', role: 'ТАНК · ПЛОЩАДНОЙ УРОН', cost: 4200,
       shape: 'golem', anim: 'stone', c1: '#9a7b4f', c2: '#3a2c18', primary: 'str',
       tip: 'Самый живучий герой: стоит в центре толпы и перемалывает её землетрясением.',

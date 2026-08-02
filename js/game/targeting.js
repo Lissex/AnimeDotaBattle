@@ -19,6 +19,25 @@ AA.module('game/targeting', (function () {
     return h;
   }
 
+  /**
+   * На кого враг реально нападает: ближайший видимый союзник игрока.
+   * Благодаря этому иллюзии оттягивают на себя урон — иначе они были
+   * бы просто декорацией.
+   */
+  function enemyTarget(u) {
+    var w = W(), m = M(), best = null, bd = 1e9;
+    for (var i = 0; i < w.units.length; i++) {
+      var a = w.units[i];
+      if (a.dead || a.team !== 0) continue;
+      if (B().isInvisible(a) && m.dist(u, a) > 110) continue;
+      var d = m.dist(u, a);
+      // за настоящим героем гонятся чуть охотнее, чем за копией
+      if (a.isIllusion) d += 90;
+      if (d < bd) { bd = d; best = a; }
+    }
+    return best;
+  }
+
   function nearest(u, range) {
     var w = W(), m = M(), best = null, bd = range === undefined ? 1e9 : range;
     for (var i = 0; i < w.units.length; i++) {
@@ -109,7 +128,7 @@ AA.module('game/targeting', (function () {
   }
 
   return {
-    visible: visible, heroVisibleTo: heroVisibleTo,
+    visible: visible, heroVisibleTo: heroVisibleTo, enemyTarget: enemyTarget,
     nearest: nearest, pick: pick, lowestHp: lowestHp, bestCluster: bestCluster,
     forEachEnemy: forEachEnemy, applyInCircle: applyInCircle, countThreats: countThreats
   };

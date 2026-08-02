@@ -127,6 +127,18 @@ AA.module('content/skins', (function () {
         fx: 'embers', fxColor: '#ff8a3a', aura: 'rgba(255,138,58,.2)'
       }
     ],
+    demon: [
+      { id: 'default', name: 'Демон Клинков', tier: 0, cost: 0 },
+      {
+        id: 'nether', name: 'Изнанка Разлома', tier: 1, cost: 2200,
+        palette: { skin: '#c898e8', cloth: '#1a0a2a', armor: '#9a3ad8', trim: '#ff8ae8' }
+      },
+      {
+        id: 'demonlord', name: 'ИММОРТАЛ · Владыка Отражений', tier: 2, ad: true,
+        palette: { skin: '#e0c0f8', cloth: '#12061c', armor: '#c81aff', trim: '#ffb0ff' },
+        fx: 'trail', fxColor: '#e05aff', aura: 'rgba(224,90,255,.2)'
+      }
+    ],
     golem: [
       { id: 'default', name: 'Голем', tier: 0, cost: 0 },
       {

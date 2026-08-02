@@ -40,14 +40,15 @@ AA.module('game/terrain', (function () {
 
     var rand = m.seeded(m.seedFromString(mapId) + 7);
     var c = AA.Game.world.center();
-    var density = Math.min(1, (w.w * w.h) / 900000 + .45);
+    // мир большой — объектов нужно кратно больше, чем на один экран
+    var scale = Math.max(1, (w.w * w.h) / 900000);
 
     map.props.forEach(function (entry) {
-      var type = entry[0], count = entry[1], meta = PROP[type];
+      var type = entry[0], meta = PROP[type];
       if (!meta) return;
+      var count = Math.round(entry[1] * scale);
 
       for (var k = 0; k < count; k++) {
-        if (k > 2 && rand() > density) continue;          // на мелком экране реже
         var r = meta.rMin + rand() * (meta.rMax - meta.rMin);
         var spot = findSpot(rand, r, c);
         if (!spot) continue;
@@ -64,8 +65,8 @@ AA.module('game/terrain', (function () {
     var w = W(), m = M();
     for (var tries = 0; tries < 40; tries++) {
       var x = w.PAD + 30 + rand() * (w.w - w.PAD * 2 - 60);
-      var y = w.PAD + w.TOP + 30 + rand() * (w.h - w.PAD * 2 - w.TOP - 60);
-      if (m.d2(x, y, center.x, center.y) < 150 * 150) continue;   // не заваливаем спавн
+      var y = w.PAD + 30 + rand() * (w.h - w.PAD * 2 - 60);
+      if (m.d2(x, y, center.x, center.y) < 190 * 190) continue;   // не заваливаем спавн
       var ok = true;
       for (var i = 0; i < w.props.length; i++) {
         var o = w.props[i];

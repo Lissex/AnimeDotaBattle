@@ -103,9 +103,10 @@
 .bh-items{display:grid;grid-template-columns:repeat(3,30px);gap:3px}
 .bh-items .isl{
   width:30px;height:30px;border-radius:6px;background:rgba(0,0,0,.5);
-  border:1px solid var(--line);border-style:solid;
+  border:1px solid var(--line);border-style:solid;overflow:hidden;padding:0;
   display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:900;
 }
+.bh-items .isl canvas{display:block;width:100%;height:100%}
 
 /* ---------------- босс ---------------- */
 .boss-hud{
@@ -169,10 +170,14 @@
   background:var(--panel2);display:flex;align-items:center;justify-content:center;
   overflow:hidden;
 }
-.sb .key{position:absolute;top:2px;left:5px;font-size:9px;color:var(--dim);font-weight:800}
-.sb .gl{font-size:22px;line-height:1}
+.sb .icon-canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
+.sb .key{
+  position:absolute;top:1px;left:4px;font-size:9px;font-weight:800;z-index:2;
+  color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.9);
+}
+.sb .gl{font-size:22px;line-height:1;position:relative;z-index:1}
 .sb .cd{
-  position:absolute;inset:0;background:rgba(0,0,0,.72);
+  position:absolute;inset:0;background:rgba(0,0,0,.72);z-index:3;
   display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:900;
 }
 .sb.ready{border-color:#fff;box-shadow:0 0 14px rgba(255,255,255,.25)}

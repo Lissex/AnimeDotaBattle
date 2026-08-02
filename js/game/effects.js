@@ -188,9 +188,10 @@ AA.module('game/effects', (function () {
     if (w.shakeT > 0) { w.shakeT -= dt; if (w.shakeT <= 0) w.shakeMag = 0; }
     if (w.flashT > 0) w.flashT = Math.max(0, w.flashT - dt * 2.2);
 
-    // фоновые угольки под цвет карты
+    // фоновые угольки под цвет карты — только в видимой области
     if (w.map && Math.random() < dt * 14) {
-      ember(M().rnd(0, w.w), w.h, w.map.accent, M().rnd(2, 4.5));
+      ember(M().rnd(w.cam.x, w.cam.x + w.view.w),
+        w.cam.y + w.view.h, w.map.accent, M().rnd(2, 4.5));
     }
   }
 

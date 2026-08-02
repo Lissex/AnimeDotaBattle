@@ -5,6 +5,8 @@ AA.module('game/stats', (function () {
 
   var FLAT = ['atk', 'armor', 'ms', 'range', 'hpReg', 'mpReg', 'sp', 'crit', 'lifesteal', 'cdr', 'hp', 'mp'];
 
+  function W_hero() { return AA.Game.world.state.hero; }
+
   function blank() {
     return {
       str: 0, agi: 0, int: 0,
@@ -97,6 +99,14 @@ AA.module('game/stats', (function () {
     }
 
     /* ---------- лимиты ---------- */
+    // метаморфоза меняет тип атаки: ближний бой становится дальним
+    if (u.meta && u.base && u.base.range < 150) s.range = Math.max(s.range, 530);
+
+    // талант «Живые копии» уменьшает лишний урон по иллюзиям
+    if (u.isIllusion && u.takenMul > 1 && AA.Game.talents.has(W_hero(), 'dm_illu_dmg')) {
+      u.takenMul = 1 + (3 - 1) * .5;
+    }
+
     s.as *= s.asMul;
     s.mr = M.clamp(s.mr, -.5, .8);
     s.cdr = Math.min(60, s.cdr);

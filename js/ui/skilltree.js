@@ -28,7 +28,7 @@ AA.module('ui/skilltree', (function () {
       }
 
       var row = d.el('div', 'su',
-        '<div class="sk-ic" style="background:' + s.color + '">' + s.icon + '</div>' +
+        '<div class="sk-ic" data-icon="' + s.id + '" data-color="' + s.color + '"></div>' +
         '<div class="su-info"><b>' + s.name +
         (s.type !== 'passive' ? ' <span class="kbd">' + slot + '</span>' : ' <span class="kbd">П</span>') +
         ' <span class="dim">ур. ' + lv + '</span></b>' +
@@ -50,6 +50,7 @@ AA.module('ui/skilltree', (function () {
       box.appendChild(row);
     });
 
+    fillIcons(box);
     box.appendChild(attributeRow(h));
     box.appendChild(AA.UI.talents.chosenList());
     if (h.invoker) box.appendChild(comboTable());
@@ -114,6 +115,15 @@ AA.module('ui/skilltree', (function () {
     render();
   }
 
+  /** Подставляет процедурные иконки во все заготовки внутри узла. */
+  function fillIcons(root) {
+    AA.UI.dom.$$('[data-icon]', root).forEach(function (slot) {
+      if (slot.firstChild) return;
+      slot.appendChild(AA.Render.icons.element(
+        40, slot.dataset.icon, slot.dataset.color || '#8b97bd'));
+    });
+  }
+
   /* ---------------- справочник связок ---------------- */
   function reagentDots(key) {
     var C = AA.UI.skillbar.ELEM_COLOR, I = AA.UI.skillbar.ELEM_ICON, s = '';
@@ -145,5 +155,8 @@ AA.module('ui/skilltree', (function () {
     D().$('btn-autolevel').onclick = function () { autoAssign(false); };
   }
 
-  return { open: open, render: render, autoAssign: autoAssign, comboTable: comboTable, bind: bind };
+  return {
+    open: open, render: render, autoAssign: autoAssign,
+    comboTable: comboTable, fillIcons: fillIcons, bind: bind
+  };
 })());

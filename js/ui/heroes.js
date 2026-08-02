@@ -26,10 +26,11 @@ AA.module('ui/heroes', (function () {
       pw.appendChild(AA.Render.portrait.element(48, h));
       card.appendChild(pw);
 
+      var A = AA.Content.attributes;
       card.appendChild(d.el('div', 'hc-info',
         '<b>' + d.t(h.name) + '</b>' +
-        '<small style="color:' + AA.Content.attributes.COLOR[h.primary] + '">' +
-        (open_ ? ('ур. ' + (1 + d.permLv(h.id))) : d.t('ОТКРЫТЬ')) + '</small>'));
+        '<small style="color:' + A.COLOR[h.primary] + '">' +
+        (open_ ? A.NAME[h.primary] : d.t('ОТКРЫТЬ')) + '</small>'));
 
       if (!open_) {
         card.appendChild(d.el('div', 'hero-lock',
@@ -48,7 +49,6 @@ AA.module('ui/heroes', (function () {
     var d = D(), A = AA.Content.attributes;
     var h = AA.Content.heroes.get(selected);
     var open_ = d.unlocked(h.id);
-    var lv = 1 + d.permLv(h.id);
     var box = d.$('hero-detail');
     box.innerHTML = '';
 
@@ -65,11 +65,10 @@ AA.module('ui/heroes', (function () {
 
     box.appendChild(d.el('p', 'hd-tip', h.tip));
 
-    /* атрибуты и производные */
-    var k = lv - 1;
-    var str = h.attr.str + h.gain.str * k;
-    var agi = h.attr.agi + h.gain.agi * k;
-    var int_ = h.attr.int + h.gain.int * k;
+    /* атрибуты на первом уровне — герой всегда стартует с него */
+    var str = h.attr.str;
+    var agi = h.attr.agi;
+    var int_ = h.attr.int;
     var prim = h.primary === 'str' ? str : h.primary === 'agi' ? agi : int_;
 
     var wrap = d.el('div', null, d.attrBlock(str, agi, int_, h.primary));
@@ -99,8 +98,16 @@ AA.module('ui/heroes', (function () {
     box.appendChild(skillList(h));
     if (h.invoker) box.appendChild(AA.UI.skilltree.comboTable());
 
+    /* прирост за уровень — важнее стартовых чисел */
+    box.appendChild(d.el('div', 'hd-growth',
+      'Прирост за уровень: ' +
+      '<b style="color:' + A.COLOR.str + '">' + h.gain.str.toFixed(1) + '</b> / ' +
+      '<b style="color:' + A.COLOR.agi + '">' + h.gain.agi.toFixed(1) + '</b> / ' +
+      '<b style="color:' + A.COLOR.int + '">' + h.gain.int.toFixed(1) + '</b>' +
+      ' · уровень даётся за каждую волну, за босса сразу два'));
+
     /* кнопки */
-    box.appendChild(footer(h, open_, lv));
+    box.appendChild(footer(h, open_));
   }
 
   /* ---------------- облики ----------------
@@ -184,15 +191,16 @@ AA.module('ui/heroes', (function () {
         ? (kind + ' · мана ' + s.mana[0] + ' · КД ' + s.cd[0] + ' сек')
         : kind;
       wrap.appendChild(d.el('div', 'sk-row',
-        '<div class="sk-ic" style="background:' + s.color + '">' + s.icon + '</div>' +
+        '<div class="sk-ic" data-icon="' + s.id + '" data-color="' + s.color + '"></div>' +
         '<div><b>' + s.name + '</b><p>' + s.desc(0) + '</p>' +
         '<div class="sk-meta">' + meta + '</div></div>'));
     });
+    AA.UI.skilltree.fillIcons(wrap);
     return wrap;
   }
 
-  function footer(h, open_, lv) {
-    var d = D(), A = AA.Content.attributes;
+  function footer(h, open_) {
+    var d = D();
     var foot = d.el('div', 'hd-foot');
 
     if (!open_) {
@@ -210,18 +218,7 @@ AA.module('ui/heroes', (function () {
       return foot;
     }
 
-    var cost = A.upgradeCost(d.permLv(h.id));
-    var up = d.el('button', 'btn', 'УЛУЧШИТЬ · ур.' + (lv + 1) + ' — ' + d.fmt(cost) + ' ♦');
-    up.disabled = lv >= A.MAX_HERO_LV;
-    up.onclick = function () {
-      if (!d.spendSouls(cost)) { AA.UI.toast.show('Не хватает душ'); return; }
-      d.save().heroLv[h.id] = d.permLv(h.id) + 1;
-      AA.Platform.storage.commit(true);
-      AA.Core.audio.lvl();
-      renderList(); renderDetail();
-    };
-    foot.appendChild(up);
-
+    // уровни больше не покупаются — герой качается прямо в бою
     var pick = d.el('button', 'btn btn-main',
       d.save().selected === h.id ? d.t('ВЫБРАН') : d.t('ВЫБРАТЬ'));
     pick.onclick = function () {

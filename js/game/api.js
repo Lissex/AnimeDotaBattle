@@ -43,7 +43,10 @@ AA.module('game/api', (function () {
     /* ---------- баффы ---------- */
     buff: function (u, def) { return B().add(u, def); },
     removeBuff: function (u, id) { return B().remove(u, id); },
-    hasBuff: function (u, id) { return B().has(u, id); },
+    hasBuff: function (u, id) { return B().get(u, id); },
+
+    /* ---------- иллюзии ---------- */
+    illusion: function (src, opts) { return AA.Game.factory.illusion(src, opts); },
 
     /* ---------- эффекты ---------- */
     burst: function (x, y, c, n) { F().burst(x, y, c, n); },

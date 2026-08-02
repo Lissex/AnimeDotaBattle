@@ -48,7 +48,11 @@ AA.module('game/buffs', (function () {
       if (b.regenPct) u.hp = Math.min(u.maxHp, u.hp + u.maxHp * b.regenPct / 100 * dt);
       if (b.spin) u.spin += dt * 15;
       if (u.dead) return;
-      if (b.t <= 0) { u.buffs.splice(i, 1); AA.Game.stats.recalc(u); }
+      if (b.t <= 0) {
+        if (b.meta) u.meta = false;      // метаморфоза кончилась
+        u.buffs.splice(i, 1);
+        AA.Game.stats.recalc(u);
+      }
     }
   }
 

@@ -37,6 +37,7 @@ AA.module('game/loop', (function () {
     AA.Game.projectiles.update(dt);
     AA.Game.runes.update(dt);
     AA.Game.effects.update(dt);
+    AA.Game.camera.update(dt);
     cleanupDead();
     updateDps();
 
@@ -77,6 +78,9 @@ AA.module('game/loop', (function () {
         AA.Game.ai.enemy(u, dt);
         if (u.isBoss && !B.isStunned(u)) AA.Game.ai.bossAbility(u, dt);
         if (u.dead) continue;
+      } else if (u.isIllusion) {
+        AA.Game.ai.illusion(u, dt);
+        if (!updateIllusionLife(u, dt)) continue;
       }
 
       if (u.leap) {
@@ -105,6 +109,19 @@ AA.module('game/loop', (function () {
       if (u.castFx > 0) u.castFx = Math.max(0, u.castFx - dt * 3);
       if (u.hp <= 0) AA.Game.combat.kill(null, u);
     }
+  }
+
+  /** Срок жизни копии. @returns {boolean} жива ли она дальше */
+  function updateIllusionLife(u, dt) {
+    u.life -= dt;
+
+    // копия из Отражения держится, только пока жив оригинал
+    if (u.guard && u.guard.dead) u.life = Math.min(u.life, 0);
+
+    if (u.life > 0) return true;
+    AA.Game.effects.burst(u.x, u.y, '#8ab0ff', 12);
+    u.dead = true;
+    return false;
   }
 
   function footsteps(u, dt) {
@@ -161,6 +178,7 @@ AA.module('game/loop', (function () {
     w.units.push(hero);
 
     w.running = true; w.paused = false;
+    AA.Game.camera.snap();
     AA.Game.runes.reset();
     if (training) AA.Game.waves.setupTraining();
     else AA.Game.waves.spawnWave();
@@ -173,6 +191,7 @@ AA.module('game/loop', (function () {
     h.hp = h.maxHp; h.mp = h.maxMp;
     h.x = c.x; h.y = c.y;
     w.over = false; w.running = true; w.paused = false;
+    AA.Game.camera.snap();
 
     for (var i = 0; i < w.units.length; i++) {
       var e = w.units[i];

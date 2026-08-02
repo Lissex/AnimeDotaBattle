@@ -44,22 +44,26 @@ AA.module('content/attributes', (function () {
     /** Порядковый номер боссовой встречи: 10-я волна → 1, 20-я → 2. */
     bossIndex: function (w) { return Math.floor(w / BOSS_EVERY); },
 
-    /* ---- экономика ----
-       Кривые растянуты под 50 волн: к сороковой герой должен
-       выходить на предельный уровень, к пятидесятой — упираться
-       в потолок сборки, а не в нехватку золота. */
+    /* ---- прогрессия за волны ----
+       Опыта нет: уровень выдаётся прямо за зачищенную волну.
+       Обычная волна — один уровень, боссовая — два. Значит к
+       45-й волне герой упирается в потолок, а таланты падают
+       ровно на 10, 20, 30, 40 и 50 уровнях. */
+    levelsForWave: function (w) { return (w % BOSS_EVERY === 0) ? 2 : 1; },
+
+    /** До какого уровня герой дорастёт к концу указанной волны. */
+    levelAfterWave: function (w) {
+      return Math.min(MAX_HERO_LV, 1 + w + Math.floor(w / BOSS_EVERY));
+    },
+
+    /* ---- экономика ---- */
     goldPerWave: function (w) { return Math.round(280 + 95 * w + 7 * w * w); },
-    xpPerWave: function (w) { return Math.round(70 + 60 * w + 2 * w * w); },
-    xpToLevel: function (lv) { return Math.round(55 + 28 * lv + 1.2 * lv * lv); },
     soulsFor: function (wave, kills) { return Math.round(wave * 34 + kills * 3); },
 
     enemyScale: function (w) { return 1 + 0.125 * (w - 1) + 0.0055 * (w - 1) * (w - 1); },
     enemyCount: function (w) { return Math.min(2 + Math.floor(w / 3), 8); },
 
     /** Потолок уровня умения растёт вместе с уровнем героя. */
-    skillCap: function (heroLv) { return Math.min(MAX_SKILL_LV, 1 + Math.floor((heroLv - 1) / 3)); },
-
-    /** Стоимость постоянного уровня героя в душах. */
-    upgradeCost: function (permLv) { return 300 + permLv * 190; }
+    skillCap: function (heroLv) { return Math.min(MAX_SKILL_LV, 1 + Math.floor((heroLv - 1) / 4)); }
   };
 })());

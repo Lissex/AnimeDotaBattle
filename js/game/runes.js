@@ -15,14 +15,18 @@ AA.module('game/runes', (function () {
     timer = R().FIRST_DELAY;
   }
 
-  /** Свободная точка подальше от героя и вне препятствий. */
+  /** Свободная точка неподалёку от героя, но не под ногами.
+      В большом мире руна на другом конце карты бесполезна. */
   function findSpot() {
     var w = W(), m = M(), h = w.hero;
+    var cx = h ? h.x : w.w / 2, cy = h ? h.y : w.h / 2;
+
     for (var i = 0; i < 40; i++) {
-      var x = w.PAD + 60 + Math.random() * (w.w - w.PAD * 2 - 120);
-      var y = w.PAD + w.TOP + 60 + Math.random() * (w.h - w.PAD * 2 - w.TOP - 120);
+      var a = m.rnd(0, 6.2832), d = m.rnd(320, 900);
+      var x = m.clamp(cx + Math.cos(a) * d, w.PAD + 40, w.w - w.PAD - 40);
+      var y = m.clamp(cy + Math.sin(a) * d, w.PAD + 40, w.h - w.PAD - 40);
       if (AA.Game.terrain.blocked(x, y, 26)) continue;
-      if (h && m.d2(x, y, h.x, h.y) < 220 * 220) continue;   // не под ногами
+      if (m.d2(x, y, cx, cy) < 260 * 260) continue;
       return { x: x, y: y };
     }
     return null;

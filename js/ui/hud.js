@@ -29,9 +29,11 @@ AA.module('ui/hud', (function () {
     var w = W(), h = w.hero, d = D();
     if (!h) return;
 
+    var A = AA.Content.attributes;
     bar('hud-hp', 'hud-hp-txt', h.hp, h.maxHp);
     bar('hud-mp', 'hud-mp-txt', h.mp, h.maxMp);
-    bar('hud-xp', null, h.xp, AA.Content.attributes.xpToLevel(h.level));
+    // полоска опыта показывает путь к предельному уровню
+    bar('hud-xp', null, h.level - 1, A.MAX_HERO_LV - 1);
 
     set('hud-wave', w.wave, 'wave');
     set('hud-gold', d.goldText(), 'gold');
@@ -125,8 +127,8 @@ AA.module('ui/hud', (function () {
       if (it) {
         slot.classList.add('full');
         slot.style.borderColor = R[it.t].c;
-        slot.style.background = 'linear-gradient(180deg,' + R[it.t].c + '33,rgba(0,0,0,.5))';
-        slot.textContent = it.name.charAt(0);
+        slot.title = it.name;
+        slot.appendChild(AA.Render.icons.element(30, it.id, R[it.t].c));
       }
       box.appendChild(slot);
     }
@@ -137,15 +139,17 @@ AA.module('ui/hud', (function () {
     var w = W(), h = w.hero, A = AA.Content.attributes;
 
     w.gold += A.goldPerWave(wave);
-    h.xp += A.xpPerWave(wave);
 
-    while (h.xp >= A.xpToLevel(h.level) && h.level < A.MAX_HERO_LV) {
-      h.xp -= A.xpToLevel(h.level);
+    // уровень даётся прямо за волну: обычная — один, боссовая — два
+    var gained = A.levelsForWave(wave);
+    for (var i = 0; i < gained && h.level < A.MAX_HERO_LV; i++) {
       h.level++; h.pts++;
       AA.Game.stats.recalc(h);
       h.hp = Math.min(h.maxHp, h.hp + h.maxHp * .2);
+    }
+    if (gained) {
       AA.Core.audio.lvl();
-      AA.UI.toast.show('Новый уровень!');
+      AA.UI.toast.show(gained > 1 ? 'Уровень +2!' : 'Новый уровень!');
     }
     AA.Game.stats.recalc(h);
     refresh(true);

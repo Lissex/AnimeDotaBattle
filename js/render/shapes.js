@@ -61,6 +61,10 @@ AA.module('render/shapes', (function () {
     golem: {
       skin: '#8a7458', cloth: '#3a2c18', armor: '#9a7b4f', trim: '#d0a860',
       helm: 'stone', torso: 'stone', weapon: 'fists', cape: false, bulk: 1.35
+    },
+    demon: {
+      skin: '#b884d8', cloth: '#2a0f3a', armor: '#7a2ab0', trim: '#ff6ad8',
+      helm: 'horns', torso: 'leather', weapon: 'twinblades', cape: true, bulk: .96
     }
   };
 
@@ -110,7 +114,7 @@ AA.module('render/shapes', (function () {
   function hero(ctx, u, time) {
     var m = M();
     var kit = kitOf(u);
-    var s = u.r / 22;
+    var s = u.r / 28;               // базовый масштаб фигуры
     var t = time || 0;
 
     // направление: корпус зеркалится, рука целится
@@ -173,11 +177,26 @@ AA.module('render/shapes', (function () {
   function leg(ctx, s, x, offset, color, front) {
     var w = 5.2 * s * (front ? 1 : .85);
     limb(ctx, x, 3 * s, x + offset, 16 * s, w, front ? color : shadeColor(color, .7));
-    // ботинок
+
+    // наколенник
+    if (front) {
+      ctx.fillStyle = shadeColor(color, 1.35);
+      ctx.beginPath();
+      ctx.ellipse(x + offset * .55, 9.5 * s, 2.9 * s, 2.2 * s, 0, 0, 6.2832);
+      ctx.fill();
+      ctx.strokeStyle = 'rgba(0,0,0,.4)'; ctx.lineWidth = 1;
+      ctx.stroke();
+    }
+
+    // ботинок с отворотом
     ctx.fillStyle = front ? '#2a2018' : '#1e160f';
     ctx.beginPath();
-    ctx.ellipse(x + offset + 1.2 * s, 17.4 * s, 3.6 * s, 2.2 * s, 0, 0, 6.2832);
+    ctx.ellipse(x + offset + 1.2 * s, 17.4 * s, 3.9 * s, 2.4 * s, 0, 0, 6.2832);
     ctx.fill();
+    if (front) {
+      ctx.fillStyle = '#3a2c20';
+      ctx.fillRect(x + offset - 2.6 * s, 14.4 * s, 5.4 * s, 1.6 * s);
+    }
   }
 
   function cape(ctx, s, bulk, color, t, moving) {
@@ -217,9 +236,18 @@ AA.module('render/shapes', (function () {
         ctx.lineTo(-w * .26, 1 * s);
         ctx.closePath();
         ctx.fill();
-        // пояс
+        // пояс с пряжкой
         ctx.fillStyle = kit.trim;
         ctx.fillRect(-w * .32, 1 * s, w * .64, 2.2 * s);
+        ctx.fillStyle = shadeColor(kit.trim, .55);
+        ctx.fillRect(-1.8 * s, .4 * s, 3.6 * s, 3.4 * s);
+        // вышивка по подолу
+        ctx.strokeStyle = kit.trim; ctx.lineWidth = 1.2;
+        ctx.globalAlpha = .7;
+        ctx.beginPath();
+        ctx.moveTo(-w * .58, 13 * s); ctx.lineTo(w * .58, 13 * s);
+        ctx.stroke();
+        ctx.globalAlpha = 1;
         break;
 
       case 'plate':
@@ -232,15 +260,27 @@ AA.module('render/shapes', (function () {
         ctx.moveTo(-w * .34, -4 * s); ctx.lineTo(w * .34, -4 * s);
         ctx.moveTo(-w * .3, 1 * s); ctx.lineTo(w * .3, 1 * s);
         ctx.stroke();
+        // заклёпки по краю нагрудника
+        ctx.fillStyle = shadeColor(kit.trim, .9);
+        for (var ri = -1; ri <= 1; ri++) {
+          ctx.beginPath(); ctx.arc(-w * .36, ri * 4 * s - 2 * s, .8 * s, 0, 6.2832); ctx.fill();
+          ctx.beginPath(); ctx.arc(w * .36, ri * 4 * s - 2 * s, .8 * s, 0, 6.2832); ctx.fill();
+        }
         // герб
         ctx.fillStyle = kit.trim;
         ctx.beginPath();
         ctx.moveTo(0, -9 * s); ctx.lineTo(3 * s, -6 * s);
         ctx.lineTo(0, -2 * s); ctx.lineTo(-3 * s, -6 * s);
         ctx.closePath(); ctx.fill();
-        // юбка доспеха
+        // юбка доспеха с сегментами
         ctx.fillStyle = shadeColor(kit.armor, .7);
         ctx.fillRect(-w * .36, 5 * s, w * .72, 5 * s);
+        ctx.strokeStyle = 'rgba(0,0,0,.4)'; ctx.lineWidth = 1;
+        for (var sg = -1; sg <= 1; sg++) {
+          ctx.beginPath();
+          ctx.moveTo(sg * w * .16, 5 * s); ctx.lineTo(sg * w * .16, 10 * s);
+          ctx.stroke();
+        }
         break;
 
       case 'leather':
@@ -461,7 +501,17 @@ AA.module('render/shapes', (function () {
   }
 
   function pauldrons(ctx, s, bulk, kit, tint) {
-    if (kit.torso === 'robe') return;   // у магов плечи не бронированы
+    if (kit.torso === 'robe') {
+      // у магов вместо наплечников — оторочка воротника
+      ctx.strokeStyle = kit.trim;
+      ctx.lineWidth = 1.8 * s;
+      ctx.beginPath();
+      ctx.moveTo(-5.4 * s, -10.4 * s);
+      ctx.quadraticCurveTo(0, -12.4 * s, 5.4 * s, -10.4 * s);
+      ctx.stroke();
+      return;
+    }
+
     var x = 7.6 * s * bulk;
     ctx.fillStyle = tint(kit.armor);
     ctx.beginPath();
@@ -472,6 +522,18 @@ AA.module('render/shapes', (function () {
     ctx.ellipse(x, -9 * s, 4.6 * s, 3.8 * s, .3, 0, 6.2832);
     ctx.fill();
     outline(ctx, 1.4);
+
+    // блик и заклёпки на правом наплечнике
+    ctx.fillStyle = 'rgba(255,255,255,.22)';
+    ctx.beginPath();
+    ctx.ellipse(x - .6 * s, -10.4 * s, 2.4 * s, 1.2 * s, .3, 0, 6.2832);
+    ctx.fill();
+    ctx.fillStyle = kit.trim;
+    for (var i = -1; i <= 1; i++) {
+      ctx.beginPath();
+      ctx.arc(x + i * 2.2 * s, -7.2 * s, .7 * s, 0, 6.2832);
+      ctx.fill();
+    }
 
     if (kit.helm === 'horned' || kit.torso === 'plate') {
       // шипы на правом наплечнике
@@ -498,6 +560,16 @@ AA.module('render/shapes', (function () {
     ctx.ellipse(.6 * s, -19 * s, hr * .92, hr, 0, 0, 6.2832);
     ctx.fill();
     outline(ctx, 1.5);
+
+    // объём: тень со стороны спины и блик на скуле
+    ctx.fillStyle = 'rgba(0,0,0,.18)';
+    ctx.beginPath();
+    ctx.ellipse(-2.6 * s, -19 * s, hr * .42, hr * .82, 0, 0, 6.2832);
+    ctx.fill();
+    ctx.fillStyle = 'rgba(255,255,255,.16)';
+    ctx.beginPath();
+    ctx.ellipse(3.2 * s, -21.4 * s, hr * .3, hr * .22, -.4, 0, 6.2832);
+    ctx.fill();
 
     face(ctx, s, kit, u, t);
     headgear(ctx, s, hr, kit, tint, t);
@@ -684,6 +756,34 @@ AA.module('render/shapes', (function () {
         ctx.fill();
         break;
 
+      case 'horns':                                     // демонические рога и грива
+        ctx.fillStyle = shadeColor(kit.cloth, 1.6);
+        ctx.beginPath();
+        ctx.ellipse(-2.2 * s, -20 * s, hr * .8, hr * .95, .2, 0, 6.2832);
+        ctx.fill();
+        ctx.fillStyle = tint(kit.armor);
+        ctx.beginPath();
+        ctx.moveTo(-4.6 * s, -24.4 * s);
+        ctx.quadraticCurveTo(-11 * s, -31 * s, -6.4 * s, -35 * s);
+        ctx.quadraticCurveTo(-6.6 * s, -28 * s, -2.4 * s, -25 * s);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.moveTo(5.8 * s, -24.4 * s);
+        ctx.quadraticCurveTo(12.2 * s, -31 * s, 7.6 * s, -35 * s);
+        ctx.quadraticCurveTo(7.8 * s, -28 * s, 3.6 * s, -25 * s);
+        ctx.fill();
+        // светящаяся метка на лбу
+        ctx.fillStyle = kit.trim;
+        ctx.shadowColor = kit.trim; ctx.shadowBlur = 10;
+        ctx.beginPath();
+        ctx.moveTo(.6 * s, -25.4 * s);
+        ctx.lineTo(2 * s, -23 * s);
+        ctx.lineTo(.6 * s, -21.4 * s);
+        ctx.lineTo(-.8 * s, -23 * s);
+        ctx.closePath(); ctx.fill();
+        ctx.shadowBlur = 0;
+        break;
+
       case 'stone':                                     // каменная голова
         ctx.fillStyle = tint(kit.armor);
         ctx.beginPath();
@@ -731,8 +831,24 @@ AA.module('render/shapes', (function () {
 
     var reach = 11 * s;
     limb(ctx, 0, 0, reach, 0, 5 * s * bulk, tint(kit.skin));   // предплечье
-    ctx.fillStyle = '#3a2a1e';                                  // перчатка
-    ctx.beginPath(); ctx.arc(reach, 0, 2.8 * s, 0, 6.2832); ctx.fill();
+
+    // наруч
+    ctx.fillStyle = tint(kit.armor);
+    ctx.beginPath();
+    ctx.ellipse(reach * .5, 0, 3 * s, 2.9 * s * bulk, 0, 0, 6.2832);
+    ctx.fill();
+    outline(ctx, 1.2);
+    ctx.fillStyle = kit.trim;
+    ctx.fillRect(reach * .5 - 2.6 * s, -.7 * s, 5.2 * s, 1.4 * s);
+
+    // перчатка с пальцами
+    ctx.fillStyle = '#3a2a1e';
+    ctx.beginPath(); ctx.arc(reach, 0, 3 * s, 0, 6.2832); ctx.fill();
+    ctx.strokeStyle = 'rgba(0,0,0,.5)'; ctx.lineWidth = .9;
+    ctx.beginPath();
+    ctx.moveTo(reach - 1 * s, -2.4 * s); ctx.lineTo(reach + 1.6 * s, -1.6 * s);
+    ctx.moveTo(reach - 1 * s, 2.4 * s); ctx.lineTo(reach + 1.6 * s, 1.6 * s);
+    ctx.stroke();
 
     weapon(ctx, s, kit, reach, t, u);
     ctx.restore();
@@ -849,6 +965,24 @@ AA.module('render/shapes', (function () {
         ctx.shadowBlur = 0;
         ctx.fillStyle = 'rgba(255,255,255,.75)';
         ctx.beginPath(); ctx.arc(orbX - 1 * s, -1 * s, 1.2 * s, 0, 6.2832); ctx.fill();
+        break;
+
+      case 'twinblades':                                // изогнутые демонические клинки
+        var meta = !!u.meta;
+        ctx.fillStyle = meta ? kit.trim : '#e0d0f0';
+        ctx.shadowColor = kit.trim;
+        ctx.shadowBlur = meta ? 16 : 6;
+        ctx.beginPath();
+        ctx.moveTo(0, -2 * s);
+        ctx.quadraticCurveTo(11 * s, -8 * s, 19 * s, -2 * s);
+        ctx.quadraticCurveTo(11 * s, -3.4 * s, 0, 0);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.moveTo(0, 2 * s);
+        ctx.quadraticCurveTo(9 * s, 8 * s, 15 * s, 3 * s);
+        ctx.quadraticCurveTo(9 * s, 2.4 * s, 0, 0);
+        ctx.fill();
+        ctx.shadowBlur = 0;
         break;
 
       case 'fists':                                     // каменный кулак

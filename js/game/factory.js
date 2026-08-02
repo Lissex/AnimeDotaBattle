@@ -8,7 +8,7 @@ AA.module('game/factory', (function () {
   function hero(def, level, skillLv, items) {
     var u = {
       id: M().uid(), team: 0, kind: 'hero', name: def.name, defId: def.id,
-      shape: def.shape, anim: def.anim || 'heavy', c1: def.c1, c2: def.c2, r: 22,
+      shape: def.shape, anim: def.anim || 'heavy', c1: def.c1, c2: def.c2, r: 28,
 
       attr: def.attr, gain: def.gain, primary: def.primary, base: def.base,
       bonusAttr: { str: 0, agi: 0, int: 0 },
@@ -68,6 +68,82 @@ AA.module('game/factory', (function () {
     return u;
   }
 
+  /* ============================================================
+     ИЛЛЮЗИИ
+     Копия юнита на стороне игрока. Бьёт долей урона оригинала,
+     получает кратно больше, живёт ограниченное время.
+     ============================================================ */
+
+  /**
+   * @param {object} src     кого копируем (герой или враг)
+   * @param {object} opts    { dmgPct, takenMul, dur, invuln, owner, lockTarget }
+   */
+  function illusion(src, opts) {
+    var w = W(), m = M();
+    opts = opts || {};
+
+    var u = {
+      id: m.uid(), team: 0, kind: 'illusion',
+      name: src.name, defId: src.defId,
+      shape: src.shape, anim: src.anim, c1: src.c1, c2: src.c2,
+      glow: src.glow, r: src.r,
+
+      // характеристики копируются снимком, дальше живут отдельно
+      attr: src.attr, gain: src.gain, primary: src.primary, base: src.base,
+      bonusAttr: { str: 0, agi: 0, int: 0 },
+      level: src.level, skillLv: {}, items: (src.items || []).slice(),
+      skills: null,                       // иллюзии не колдуют
+      skin: src.skin || null,
+
+      x: src.x, y: src.y, vx: 0, vy: 0, face: src.face || 0,
+      atkCd: m.rnd(0, .4), cds: {}, buffs: [], toggles: {},
+      flash: 0, spin: 0, swing: 0, step: m.rnd(0, 6), castFx: 0,
+      dead: false,
+
+      isIllusion: true,
+      dmgPct: opts.dmgPct !== undefined ? opts.dmgPct : .4,
+      takenMul: opts.takenMul !== undefined ? opts.takenMul : 3,
+      invuln: !!opts.invuln,
+      guard: opts.guard || null,          // пока жив — иллюзия неуязвима
+      lockTarget: opts.lockTarget || null,// бьёт только эту цель
+      life: opts.dur || 20,
+      meta: !!src.meta                    // состояние метаморфозы копируется
+    };
+
+    AA.Game.stats.recalc(u);
+    u.hp = u.maxHp; u.mp = u.maxMp;
+    AA.Game.world.confine(u);
+    w.units.push(u);
+
+    AA.Game.effects.burst(u.x, u.y, opts.color || '#8ab0ff', 14);
+    AA.Game.effects.ring(u.x, u.y, 60, opts.color || '#8ab0ff');
+    return u;
+  }
+
+  /** Сколько иллюзий героя сейчас на поле. */
+  function countIllusions(owner) {
+    var w = W(), n = 0;
+    for (var i = 0; i < w.units.length; i++) {
+      var u = w.units[i];
+      if (!u.dead && u.isIllusion && !u.lockTarget) n++;
+    }
+    return n;
+  }
+
+  /** Убрать самую старую копию — когда упёрлись в лимит. */
+  function dropOldestIllusion() {
+    var w = W(), oldest = null;
+    for (var i = 0; i < w.units.length; i++) {
+      var u = w.units[i];
+      if (u.dead || !u.isIllusion || u.lockTarget) continue;
+      if (!oldest || u.life < oldest.life) oldest = u;
+    }
+    if (oldest) {
+      oldest.dead = true;
+      AA.Game.effects.burst(oldest.x, oldest.y, '#8ab0ff', 10);
+    }
+  }
+
   /** Прислужник, призванный боссом: слабее обычного моба, золота не даёт. */
   function minion(id, x, y) {
     var def = AA.Content.enemies.MINIONS[id];
@@ -94,5 +170,8 @@ AA.module('game/factory', (function () {
     return u;
   }
 
-  return { hero: hero, enemy: enemy, minion: minion, dummy: dummy };
+  return {
+    hero: hero, enemy: enemy, minion: minion, dummy: dummy,
+    illusion: illusion, countIllusions: countIllusions, dropOldestIllusion: dropOldestIllusion
+  };
 })());

@@ -29,8 +29,9 @@ AA.module('ui/screens', (function () {
     var d = D(), A = AA.Content.attributes;
     var save = d.save();
     var def = AA.Content.heroes.get(d.unlocked(save.selected) ? save.selected : 'butcher');
-    var level = training ? A.MAX_HERO_LV : 1 + d.permLv(def.id);
 
+    // уровень больше не покупается: все начинают с первого
+    var level = training ? A.MAX_HERO_LV : 1;
     var hero = AA.Game.factory.hero(def, level, {}, []);
     hero.skin = AA.Content.skins.get(def.id, save.skins[def.id] || 'default');
 
@@ -38,11 +39,11 @@ AA.module('ui/screens', (function () {
       hero.pts = 0;
       def.skills.forEach(function (id) { hero.skillLv[id] = A.MAX_SKILL_LV; });
     } else {
-      hero.pts = level;
+      // одно умение выдаётся сразу, чтобы первая волна не была пустой
+      hero.pts = 1;
       hero.skillLv[def.skills[0]] = 1;
       hero.pts--;
     }
-    hero.xp = 0;
     AA.Game.stats.recalc(hero);
     hero.hp = hero.maxHp; hero.mp = hero.maxMp;
 

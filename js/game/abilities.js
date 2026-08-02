@@ -47,6 +47,7 @@ AA.module('game/abilities', (function () {
     u.cds[sk.id] = cooldown(u, sk, lv);
     u.castFx = .3;
     AA.Core.audio.cast();
+    if (u === W().hero) AA.Game.skinfx.onCast(u);
     return true;
   }
 

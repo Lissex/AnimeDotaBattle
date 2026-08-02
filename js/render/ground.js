@@ -12,12 +12,13 @@ AA.module('render/ground', (function () {
   function rebuild() {
     var w = W(), m = M();
     if (!w.w || !w.h) return;
-    var dpr = AA.Render.canvas.dpr();
 
+    // фон запекается в размер мира, а он большой — плотность
+    // держим на единице, иначе холст съедает десятки мегабайт
     if (!buffer) { buffer = document.createElement('canvas'); bctx = buffer.getContext('2d'); }
-    buffer.width = Math.round(w.w * dpr);
-    buffer.height = Math.round(w.h * dpr);
-    bctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    buffer.width = Math.round(w.w);
+    buffer.height = Math.round(w.h);
+    bctx.setTransform(1, 0, 0, 1, 0, 0);
 
     var map = w.map || AA.Content.maps.get('butcher');
     baseGradient(map);
@@ -30,8 +31,8 @@ AA.module('render/ground', (function () {
   function baseGradient(map) {
     var w = W();
     var g = bctx.createRadialGradient(
-      w.w / 2, (w.h + w.TOP) / 2, 40,
-      w.w / 2, (w.h + w.TOP) / 2, Math.max(w.w, w.h) * .82
+      w.w / 2, w.h / 2, 40,
+      w.w / 2, w.h / 2, Math.max(w.w, w.h) * .82
     );
     g.addColorStop(0, map.floor);
     g.addColorStop(.6, map.floor2);
@@ -42,14 +43,15 @@ AA.module('render/ground', (function () {
 
   function texture(map) {
     var w = W(), rand = M().seeded(1337), i;
+    var grains = Math.round(w.w * w.h / 1600);   // плотность под площадь мира
     bctx.globalAlpha = .06;
-    for (i = 0; i < 1400; i++) {
+    for (i = 0; i < grains; i++) {
       var s = rand() * 2.6 + .4;
       bctx.fillStyle = rand() > .5 ? '#ffffff' : '#000000';
       bctx.fillRect(rand() * w.w, rand() * w.h, s, s);
     }
     bctx.globalAlpha = .05;
-    for (i = 0; i < 90; i++) {
+    for (i = 0; i < 160; i++) {
       var r = 30 + rand() * 90;
       bctx.fillStyle = rand() > .5 ? map.accent : '#000000';
       bctx.beginPath();
@@ -61,8 +63,8 @@ AA.module('render/ground', (function () {
 
   function runeSeal(map) {
     var w = W();
-    var cx = w.w / 2, cy = (w.h + w.TOP) / 2;
-    var r = Math.min(w.w, w.h - w.TOP) * .34;
+    var cx = w.w / 2, cy = w.h / 2;
+    var r = Math.min(w.w, w.h) * .28;
     bctx.save();
     bctx.globalAlpha = .16;
     bctx.strokeStyle = map.accent;
@@ -91,17 +93,25 @@ AA.module('render/ground', (function () {
 
   function border(map) {
     var w = W(), m = M();
-    var x = w.PAD * .55, y = w.PAD * .55 + w.TOP * .55;
-    var bw = w.w - w.PAD * 1.1, bh = w.h - w.PAD * 1.1 - w.TOP * .55;
+    var x = w.PAD * .55, y = w.PAD * .55;
+    var bw = w.w - w.PAD * 1.1, bh = w.h - w.PAD * 1.1;
     bctx.strokeStyle = 'rgba(0,0,0,.5)'; bctx.lineWidth = 10;
     bctx.strokeRect(x - 6, y - 6, bw + 12, bh + 12);
     bctx.strokeStyle = m.rgba(map.accent, .34); bctx.lineWidth = 2;
     bctx.strokeRect(x, y, bw, bh);
   }
 
+  /** Рисуем только тот кусок мира, который попадает в кадр. */
   function draw() {
     var w = W();
-    if (buffer) AA.Render.canvas.get().drawImage(buffer, 0, 0, w.w, w.h);
+    if (!buffer) return;
+    var ctx = AA.Render.canvas.get();
+    var sx = Math.max(0, Math.floor(w.cam.x));
+    var sy = Math.max(0, Math.floor(w.cam.y));
+    var sw = Math.min(buffer.width - sx, Math.ceil(w.view.w));
+    var sh = Math.min(buffer.height - sy, Math.ceil(w.view.h));
+    if (sw <= 0 || sh <= 0) return;
+    ctx.drawImage(buffer, sx, sy, sw, sh, sx, sy, sw, sh);
   }
 
   return { rebuild: rebuild, draw: draw };

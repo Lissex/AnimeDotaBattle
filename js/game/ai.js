@@ -105,7 +105,7 @@ AA.module('game/ai', (function () {
     }
     if (u.x < w.PAD + 95) vx += .9;                       // не жаться к краю
     if (u.x > w.w - w.PAD - 95) vx -= .9;
-    if (u.y < w.PAD + w.TOP + 95) vy += .9;
+    if (u.y < w.PAD + 95) vy += .9;
     if (u.y > w.h - w.PAD - 95) vy -= .9;
 
     return { x: vx, y: vy };
@@ -158,7 +158,7 @@ AA.module('game/ai', (function () {
   function enemy(u, dt) {
     if (u.role === 'dummy') { u.vx = u.vy = 0; return; }
 
-    var m = M(), target = T().heroVisibleTo(u);
+    var m = M(), target = T().enemyTarget(u);
     if (u.tauntT > 0) {
       u.tauntT -= dt;
       if (u.tauntBy && !u.tauntBy.dead) target = u.tauntBy;
@@ -745,5 +745,38 @@ AA.module('game/ai', (function () {
     }
   }
 
-  return { autopilot: autopilot, enemy: enemy, bossAbility: bossAbility, BOSS: BOSS };
+  /* ================================================
+                    ИЛЛЮЗИИ ИГРОКА
+     Простое поведение: держаться цели и бить. Копия,
+     привязанная к жертве Отражения, не отвлекается ни на кого.
+     ================================================ */
+  function illusion(u, dt) {
+    var m = M();
+    var target = u.lockTarget && !u.lockTarget.dead
+      ? u.lockTarget
+      : T().pick(u);
+
+    if (!target) {
+      // без цели держимся рядом с героем
+      var h = W().hero;
+      if (!h || h.dead) { u.vx = u.vy = 0; return; }
+      var dh = m.dist(u, h);
+      if (dh > 220) {
+        var ah = m.angleTo(u, h);
+        u.vx = Math.cos(ah); u.vy = Math.sin(ah);
+      } else { u.vx *= .85; u.vy *= .85; }
+      return;
+    }
+
+    var d = m.dist(u, target), a = m.angleTo(u, target);
+    u.face = a;
+    var want = u.stats.range * .8;
+    if (d > want) { u.vx = Math.cos(a); u.vy = Math.sin(a); }
+    else { u.vx *= .82; u.vy *= .82; }
+  }
+
+  return {
+    autopilot: autopilot, enemy: enemy, illusion: illusion,
+    bossAbility: bossAbility, BOSS: BOSS
+  };
 })());

@@ -78,6 +78,14 @@ AA.module('content/maps', (function () {
         ['lava', 8], ['crack', 9]
       ]
     },
+    demon: {
+      name: 'Разлом Отражений', floor: '#241a30', floor2: '#0c0812', accent: '#a05ad8',
+      tint: 'rgba(110,60,170,.14)', weather: 'void',
+      props: [
+        ['crystal', 9], ['obelisk', 4], ['pillar', 5],
+        ['ice', 5], ['crack', 8]
+      ]
+    },
     golem: {
       name: 'Каменоломня', floor: '#2b2620', floor2: '#100e0a', accent: '#c07a3a',
       tint: 'rgba(140,110,70,.12)', weather: 'dust',
@@ -96,7 +104,7 @@ AA.module('content/maps', (function () {
   /** Порядок смены арен после каждого босса. Полигон не участвует. */
   var ROTATION = [
     'butcher', 'ranger', 'berserk', 'frost', 'knight',
-    'shadow', 'dryad', 'arcanist', 'pyro', 'golem'
+    'shadow', 'dryad', 'arcanist', 'demon', 'pyro', 'golem'
   ];
 
   return {

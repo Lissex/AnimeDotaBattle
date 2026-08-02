@@ -1,9 +1,15 @@
-/* render/canvas — холст, масштаб под плотность пикселей, размеры арены.
-   Все остальные модули отрисовки берут контекст отсюда. */
+/* render/canvas — холст, масштаб под плотность пикселей,
+   размеры видимой области и всего мира.
+
+   Мир крупнее экрана: на телефоне примерно вдвое, на широком
+   мониторе — меньше, чтобы арена не превращалась в пустое поле. */
 AA.module('render/canvas', (function () {
   'use strict';
 
   var el = null, ctx = null, dpr = 1;
+
+  var WORLD_MIN_W = 1700, WORLD_MIN_H = 1250;
+  var WORLD_MAX_W = 2600, WORLD_MAX_H = 1900;
 
   function W() { return AA.Game.world.state; }
 
@@ -16,17 +22,22 @@ AA.module('render/canvas', (function () {
 
   function resize() {
     if (!el) return;
-    var w = W();
+    var w = W(), m = AA.Core.math;
     var rect = el.getBoundingClientRect();
     dpr = Math.min(window.devicePixelRatio || 1, 2);
 
-    w.w = Math.max(320, Math.round(rect.width));
-    w.h = Math.max(240, Math.round(rect.height));
-    el.width = Math.round(w.w * dpr);
-    el.height = Math.round(w.h * dpr);
+    /* --- видимая область --- */
+    w.view.w = Math.max(320, Math.round(rect.width));
+    w.view.h = Math.max(240, Math.round(rect.height));
 
+    el.width = Math.round(w.view.w * dpr);
+    el.height = Math.round(w.view.h * dpr);
     ctx = el.getContext('2d');
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+    /* --- размер мира --- */
+    w.w = Math.round(m.clamp(w.view.w * 2.05, WORLD_MIN_W, WORLD_MAX_W));
+    w.h = Math.round(m.clamp(w.view.h * 2.05, WORLD_MIN_H, WORLD_MAX_H));
 
     // раскладка карты и погода зависят от размеров — перестраиваем
     if (w.mapId) {
@@ -35,9 +46,10 @@ AA.module('render/canvas', (function () {
       AA.Render.fx.resetWeather();
     }
     for (var i = 0; i < w.units.length; i++) AA.Game.world.confine(w.units[i]);
+    AA.Game.camera.snap();
   }
 
-  /** Временно подменяет контекст — нужно для запекания фона и портретов. */
+  /** Временно подменяет контекст — для запекания фона и портретов. */
   function withContext(other, fn) {
     var prev = ctx;
     ctx = other;

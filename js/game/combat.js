@@ -15,9 +15,16 @@ AA.module('game/combat', (function () {
   /* ================= урон ================= */
   function damage(src, tgt, amount, type, isAuto) {
     if (!tgt || tgt.dead) return 0;
+    // неуязвимая копия из Отражения не получает урона вовсе
+    if (tgt.invuln) return 0;
+
     var w = W(), m = M(), fx = FX();
     var s = src ? src.stats : AA.Game.stats.blank();
     var dmg = amount, tiny = amount < TINY;
+
+    // иллюзии бьют долей урона и получают кратно больше
+    if (src && src.isIllusion) dmg *= src.dmgPct;
+    if (tgt.isIllusion) dmg *= tgt.takenMul;
 
     if (type === 'magic') {
       dmg *= (1 + (s.sp || 0) / 100);
@@ -137,6 +144,7 @@ AA.module('game/combat', (function () {
       w.gold += tgt.gold || 0;
       if (tgt.gold) fx.floatText(tgt.x, tgt.y - 28, '+' + tgt.gold, '#ffc043', 15);
       rewardKillPassives();
+      if (w.hero && !w.hero.dead) AA.Game.skinfx.onKill(w.hero, tgt);
       if (tgt.isBoss) { fx.shake(20); fx.flash('#fff', .3); fx.hitstop(.12); }
     } else if (tgt === w.hero) {
       fx.shake(22); SFX().lose(); fx.flash('#ff4d5e', .45); fx.hitstop(.18);
@@ -194,9 +202,13 @@ AA.module('game/combat', (function () {
 
     var m = M(), t;
     if (u.team === 1) {
-      t = T().heroVisibleTo(u);
+      t = T().enemyTarget(u);
       if (u.tauntT > 0 && u.tauntBy && !u.tauntBy.dead) t = u.tauntBy;
       if (!t || m.dist(u, t) > u.stats.range + u.r + t.r) return;
+    } else if (u.isIllusion && u.lockTarget) {
+      // копия из Отражения бьёт только свою жертву
+      t = u.lockTarget;
+      if (t.dead || m.dist(u, t) > u.stats.range + u.r + t.r) return;
     } else {
       t = T().nearest(u, u.stats.range + u.r);
       if (!t) return;
@@ -260,6 +272,9 @@ AA.module('game/combat', (function () {
           if (lv >= 0 && sk.onAttack) sk.onAttack(u, lv, target);
         }
       }
+
+      // эффект имморталки — только визуал, урона не добавляет
+      if (u === W().hero) AA.Game.skinfx.onHit(u, target);
     };
   }
 

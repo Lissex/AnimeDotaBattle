@@ -17,11 +17,10 @@ AA.module('ui/skillbar', (function () {
       if (s.type === 'passive') return;
       slot++;
       var b = d.el('div', 'sb' + (s.type === 'reagent' ? ' sb-elem' : ''));
-      b.style.background = 'linear-gradient(180deg,' + s.color + ',rgba(0,0,0,.62))';
-      b.innerHTML =
+      b.appendChild(AA.Render.icons.element(s.type === 'reagent' ? 46 : 52, s.id, s.color));
+      b.insertAdjacentHTML('beforeend',
         '<span class="key">' + slot + '</span>' +
-        '<span class="gl">' + s.icon + '</span>' +
-        '<div class="cd" style="display:none"></div>';
+        '<div class="cd" style="display:none"></div>');
       b.dataset.idx = i;
       b.addEventListener('pointerdown', function (ev) {
         ev.preventDefault();
@@ -38,6 +37,7 @@ AA.module('ui/skillbar', (function () {
         '<span class="key">4</span>' +
         '<span class="gl" id="inv-icon">✦</span>' +
         '<div class="cd" style="display:none"></div>';
+      inv.style.background = 'linear-gradient(180deg,#3a3550,rgba(0,0,0,.62))';
       inv.addEventListener('pointerdown', function (ev) {
         ev.preventDefault();
         if (W().auto) { AA.UI.toast.show('Автобой включён'); return; }
