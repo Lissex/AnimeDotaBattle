@@ -204,6 +204,8 @@ AA.module('game/loop', (function () {
   function revive() {
     var w = W(), h = w.hero, c = AA.Game.world.center();
     h.dead = false; h.buffs.length = 0;
+    // баффы стёрты — состояния пассивок, которые их держали, тоже
+    h._prowling = false; h.unseenT = 0;
     AA.Game.stats.recalc(h);
     h.hp = h.maxHp; h.mp = h.maxMp;
     h.x = c.x; h.y = c.y;
