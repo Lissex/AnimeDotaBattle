@@ -1,0 +1,106 @@
+/* ui/menu — главное меню и справка «как играть». */
+AA.module('ui/menu', (function () {
+  'use strict';
+
+  function D() { return AA.UI.dom; }
+
+  function refresh() {
+    var d = D(), save = d.save();
+    d.$('hud-souls').textContent = d.soulsText();
+    d.$$('.hud-souls').forEach(function (e) { e.textContent = d.soulsText(); });
+    d.$('hud-best').textContent = d.t('волна ') + save.best;
+    d.$('dev-badge').style.display = d.isDev() ? '' : 'none';
+  }
+
+  function fillHowto() {
+    var d = D(), A = AA.Content.attributes.COLOR;
+    d.$('howto-body').innerHTML =
+      '<h3>ЦЕЛЬ</h3><p>Отбивайте волны врагов. Каждая пятая волна — босс. ' +
+      'Чем дальше зайдёте, тем больше душ получите в конце забега.</p>' +
+
+      '<h3>ХАРАКТЕРИСТИКИ</h3><p>' +
+      '<b style="color:' + A.str + '">Сила</b> — здоровье и его восстановление. ' +
+      '<b style="color:' + A.agi + '">Ловкость</b> — броня и скорость атаки. ' +
+      '<b style="color:' + A.int + '">Интеллект</b> — мана и сила заклинаний. ' +
+      'Главный атрибут (со звёздочкой) дополнительно даёт урон атаки.</p>' +
+
+      '<h3>УМЕНИЯ</h3><p>У каждого героя три активных умения и одно пассивное. ' +
+      'Активные качаются за очки уровней, потолок растёт вместе с уровнем героя.</p>' +
+
+      '<h3>АРКАН И СВЯЗКИ</h3><p>У Аркана вместо обычных умений три стихии: ' +
+      '<b style="color:#ff5a2f">Пламя</b>, <b style="color:#7fd4ff">Лёд</b> и ' +
+      '<b style="color:#c9a0ff">Шторм</b>. Нажимайте их в любом порядке — последние три ' +
+      'складываются в связку. Кнопка <kbd>4</kbd> (или <kbd>F</kbd>) вызывает заклинание ' +
+      'этой связки, всего их 10. Чем выше уровни использованных стихий, тем сильнее эффект.</p>' +
+
+      '<h3>УПРАВЛЕНИЕ НА КОМПЬЮТЕРЕ</h3><p>Движение — <kbd>W</kbd> <kbd>A</kbd> <kbd>S</kbd> <kbd>D</kbd> ' +
+      'или стрелки. Умения — <kbd>1</kbd> <kbd>2</kbd> <kbd>3</kbd> (дубли <kbd>Q</kbd> <kbd>E</kbd> <kbd>R</kbd>), ' +
+      'вызов связки — <kbd>4</kbd>. Автобой — <kbd>Пробел</kbd>, пауза — <kbd>Esc</kbd>. ' +
+      'Атака происходит автоматически.</p>' +
+
+      '<h3>УПРАВЛЕНИЕ НА ТЕЛЕФОНЕ</h3><p>Слева джойстик, справа кнопки умений. ' +
+      'Всё делается одной рукой.</p>' +
+
+      '<h3>АРЕНЫ</h3><p>У каждого героя своя карта со своим ландшафтом. Скалы, колонны и ' +
+      'деревья блокируют движение — за ними можно прятаться от стрелков. ' +
+      'Лава жжёт, лёд замедляет.</p>' +
+
+      '<h3>УЧЕБНЫЙ ПОЛИГОН</h3><p>Отдельный режим из меню: все умения сразу максимального ' +
+      'уровня, бесконечное золото, манекены с возрождением и счётчик урона в секунду. ' +
+      'Можно вызывать любых врагов и боссов, чтобы проверить сборку.</p>' +
+
+      '<h3>ЛАВКА</h3><p>Между волнами тратьте золото на предметы — до 6 штук. ' +
+      'Ненужное продаётся обратно за 60% цены: нажмите на предмет в инвентаре.</p>' +
+
+      '<h3>ВРАГИ</h3><p>Гнойник взрывается вплотную. Гнилодух лечит союзников — убивайте ' +
+      'первым. Панцирник держит много брони. Проклятая замедляет. Гнус нападает роем.</p>' +
+
+      '<h3>ДУШИ</h3><p>Постоянная валюта. В разделе «Герои» открывают новых бойцов и ' +
+      'повышают их стартовый уровень. Прогресс сохраняется автоматически.</p>';
+  }
+
+  function bind() {
+    var d = D(), S = AA.UI.screens;
+
+    d.$('btn-play').onclick = function () {
+      var save = d.save();
+      if (!save.seenHowto) {
+        save.seenHowto = true;
+        AA.Platform.storage.commit();
+        S.run.pendingStart = true;
+        fillHowto();
+        S.open('howto');
+        return;
+      }
+      S.startRun(false);
+    };
+
+    d.$('btn-training').onclick = function () { S.startRun(true); };
+
+    d.$('btn-heroes').onclick = function () {
+      AA.UI.heroes.open();
+    };
+
+    d.$('btn-howto').onclick = function () { fillHowto(); S.open('howto'); };
+
+    d.$('btn-settings').onclick = function () {
+      S.open('pause');
+      d.$('btn-resume').textContent = d.t('ГОТОВО');
+      d.$('btn-quit').style.display = 'none';
+    };
+
+    d.$$('[data-back]').forEach(function (b) { b.onclick = S.toMenu; });
+
+    d.$$('[data-close]').forEach(function (b) {
+      b.onclick = function () {
+        S.close(b.dataset.close);
+        if (b.dataset.close === 'howto' && S.run.pendingStart) {
+          S.run.pendingStart = false;
+          S.startRun(false);
+        }
+      };
+    });
+  }
+
+  return { refresh: refresh, bind: bind, fillHowto: fillHowto };
+})());

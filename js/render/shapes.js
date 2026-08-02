@@ -1,0 +1,1196 @@
+/* ============================================================
+   render/shapes — силуэты.
+
+   Герои рисуются как настоящие фигуры: ноги, торс с бронёй или
+   одеждой, наплечники, плащ, голова с лицом и оружие в руке.
+   Корпус всегда стоит прямо и зеркалится по направлению взгляда,
+   поворачивается только рука с оружием — так броня и лицо
+   читаются под любым углом.
+
+   Враги — существа с конечностями, а не те же круги: другая
+   пластика, другой силуэт. У каждого босса своя фигура.
+   ============================================================ */
+AA.module('render/shapes', (function () {
+  'use strict';
+
+  function M() { return AA.Core.math; }
+
+  /* ============================================================
+                        НАБОРЫ ГЕРОЕВ
+     helm   — форма головного убора
+     torso  — тип корпуса: plate / robe / leather / fur / stone / apron
+     weapon — что в руке
+     ============================================================ */
+  var KITS = {
+    brute: {
+      skin: '#c9a883', cloth: '#7a3a24', armor: '#a04a30', trim: '#e0b070',
+      helm: 'butcher', torso: 'apron', weapon: 'cleaver', cape: false, bulk: 1.22
+    },
+    archer: {
+      skin: '#d8b48c', cloth: '#2f5c3c', armor: '#4a7a52', trim: '#c8a44a',
+      helm: 'hood', torso: 'leather', weapon: 'bow', cape: true, bulk: .92
+    },
+    berserk: {
+      skin: '#d9a878', cloth: '#8a3a14', armor: '#c05a20', trim: '#f0c060',
+      helm: 'horned', torso: 'fur', weapon: 'greataxe', cape: false, bulk: 1.14
+    },
+    witch: {
+      skin: '#e8d8e8', cloth: '#1c4a80', armor: '#3a78c0', trim: '#a8e4ff',
+      helm: 'wizard', torso: 'robe', weapon: 'staff_ice', cape: true, bulk: .88
+    },
+    knight: {
+      skin: '#d8b48c', cloth: '#6a1414', armor: '#b03a3a', trim: '#e8c060',
+      helm: 'greathelm', torso: 'plate', weapon: 'sword', cape: true, bulk: 1.1
+    },
+    rogue: {
+      skin: '#cfae8e', cloth: '#2a1450', armor: '#6a3ab0', trim: '#c9a0ff',
+      helm: 'mask', torso: 'leather', weapon: 'daggers', cape: true, bulk: .9
+    },
+    dryad: {
+      skin: '#e0c8a0', cloth: '#2a5a34', armor: '#5aa060', trim: '#a8e07a',
+      helm: 'leaf', torso: 'robe', weapon: 'bow_leaf', cape: false, bulk: .9
+    },
+    mage: {
+      skin: '#e0c0a0', cloth: '#3a2a6b', armor: '#7a5ac0', trim: '#ff9a4a',
+      helm: 'wizard', torso: 'robe', weapon: 'staff_orb', cape: true, bulk: .92
+    },
+    pyro: {
+      skin: '#e8bfa0', cloth: '#5a1c06', armor: '#c04a18', trim: '#ffb03a',
+      helm: 'flamehood', torso: 'robe', weapon: 'staff_fire', cape: true, bulk: .95
+    },
+    golem: {
+      skin: '#8a7458', cloth: '#3a2c18', armor: '#9a7b4f', trim: '#d0a860',
+      helm: 'stone', torso: 'stone', weapon: 'fists', cape: false, bulk: 1.35
+    }
+  };
+
+  /* ------------------------------------------------------------
+                          ПОМОЩНИКИ
+     ------------------------------------------------------------ */
+  function limb(ctx, x1, y1, x2, y2, w, color) {
+    ctx.strokeStyle = color;
+    ctx.lineWidth = w;
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.moveTo(x1, y1);
+    ctx.lineTo(x2, y2);
+    ctx.stroke();
+  }
+
+  function shade(ctx, x, y, w, h, c1, c2, round) {
+    var g = ctx.createLinearGradient(x - w / 2, y - h / 2, x + w / 2, y + h / 2);
+    g.addColorStop(0, c1);
+    g.addColorStop(1, c2);
+    ctx.fillStyle = g;
+    ctx.beginPath();
+    if (round && ctx.roundRect) ctx.roundRect(x - w / 2, y - h / 2, w, h, round);
+    else ctx.rect(x - w / 2, y - h / 2, w, h);
+    ctx.fill();
+  }
+
+  function outline(ctx, w) {
+    ctx.strokeStyle = 'rgba(0,0,0,.55)';
+    ctx.lineWidth = w || 1.6;
+    ctx.stroke();
+  }
+
+  /* ============================================================
+                             ГЕРОЙ
+     ============================================================ */
+  function hero(ctx, u, time) {
+    var m = M();
+    var kit = KITS[u.shape] || KITS.brute;
+    var s = u.r / 22;
+    var t = time || 0;
+
+    // направление: корпус зеркалится, рука целится
+    var dirX = Math.cos(u.face || 0), dirY = Math.sin(u.face || 0);
+    var flip = dirX < 0 ? -1 : 1;
+    var aim = Math.atan2(dirY, Math.abs(dirX) || .0001);
+
+    // фаза шага и удар
+    var moving = (Math.abs(u.vx || 0) + Math.abs(u.vy || 0)) > .3;
+    var walk = moving ? Math.sin((u.step || 0) * 2) : 0;
+    var swingK = (u.swing || 0) / AA.Render.anim.SWING_TIME;
+
+    // вспышка при получении урона подсвечивает все детали разом
+    var flash = u.flash || 0;
+    var tint = flash > 0
+      ? function (c) { return m.mixWhite(c, flash * .8); }
+      : function (c) { return c; };
+
+    ctx.save();
+    ctx.scale(flip, 1);
+
+    var bulk = kit.bulk;
+
+    /* --- 1. плащ за спиной --- */
+    if (kit.cape) cape(ctx, s, bulk, tint(kit.cloth), t, moving);
+
+    /* --- 2. дальняя нога и рука --- */
+    leg(ctx, s, -2.2 * s, -walk * 5 * s, tint(kit.cloth), .75);
+    limb(ctx, -3 * s, -8 * s, -7 * s + walk * 2 * s, -1 * s, 4.4 * s * bulk, tint(shadeColor(kit.skin, .72)));
+
+    /* --- 3. ноги --- */
+    leg(ctx, s, 2.4 * s, walk * 5 * s, tint(kit.cloth), 1);
+
+    /* --- 4. корпус --- */
+    torso(ctx, s, bulk, kit, tint, u);
+
+    /* --- 5. наплечники --- */
+    pauldrons(ctx, s, bulk, kit, tint);
+
+    /* --- 6. голова --- */
+    ctx.save();
+    ctx.translate(0, -1.5 * s + (moving ? Math.abs(walk) * 1.2 * s : 0));
+    head(ctx, s, kit, tint, u, t);
+    ctx.restore();
+
+    /* --- 7. рука с оружием поверх всего --- */
+    armWithWeapon(ctx, s, bulk, kit, tint, aim, swingK, u, t);
+
+    ctx.restore();
+  }
+
+  function shadeColor(hex, k) {
+    var m = M(), c = m.hex2rgb(hex);
+    return 'rgb(' + Math.round(c[0] * k) + ',' + Math.round(c[1] * k) + ',' + Math.round(c[2] * k) + ')';
+  }
+
+  /* ---------------- части тела ---------------- */
+  function leg(ctx, s, x, offset, color, front) {
+    var w = 5.2 * s * (front ? 1 : .85);
+    limb(ctx, x, 3 * s, x + offset, 16 * s, w, front ? color : shadeColor(color, .7));
+    // ботинок
+    ctx.fillStyle = front ? '#2a2018' : '#1e160f';
+    ctx.beginPath();
+    ctx.ellipse(x + offset + 1.2 * s, 17.4 * s, 3.6 * s, 2.2 * s, 0, 0, 6.2832);
+    ctx.fill();
+  }
+
+  function cape(ctx, s, bulk, color, t, moving) {
+    var sway = Math.sin(t * (moving ? 7 : 2)) * (moving ? 3 : 1.2) * s;
+    ctx.fillStyle = shadeColor(color, .62);
+    ctx.beginPath();
+    ctx.moveTo(-7 * s * bulk, -11 * s);
+    ctx.quadraticCurveTo(-13 * s - sway, 2 * s, -9 * s - sway, 15 * s);
+    ctx.lineTo(4 * s - sway * .4, 16 * s);
+    ctx.quadraticCurveTo(7 * s * bulk, 0, 6 * s * bulk, -11 * s);
+    ctx.closePath();
+    ctx.fill();
+    outline(ctx, 1.4);
+  }
+
+  function torso(ctx, s, bulk, kit, tint, u) {
+    var w = 15 * s * bulk, h = 17 * s;
+
+    switch (kit.torso) {
+      case 'robe':
+        // подол расширяется книзу
+        ctx.fillStyle = tint(kit.cloth);
+        ctx.beginPath();
+        ctx.moveTo(-w * .38, -11 * s);
+        ctx.lineTo(w * .38, -11 * s);
+        ctx.lineTo(w * .62, 16 * s);
+        ctx.lineTo(-w * .62, 16 * s);
+        ctx.closePath();
+        ctx.fill();
+        outline(ctx);
+        // накидка сверху
+        ctx.fillStyle = tint(kit.armor);
+        ctx.beginPath();
+        ctx.moveTo(-w * .36, -11 * s);
+        ctx.lineTo(w * .36, -11 * s);
+        ctx.lineTo(w * .26, 1 * s);
+        ctx.lineTo(-w * .26, 1 * s);
+        ctx.closePath();
+        ctx.fill();
+        // пояс
+        ctx.fillStyle = kit.trim;
+        ctx.fillRect(-w * .32, 1 * s, w * .64, 2.2 * s);
+        break;
+
+      case 'plate':
+        shade(ctx, 0, -2 * s, w * .82, h, tint(kit.armor), shadeColor(kit.armor, .55), 4 * s);
+        outline(ctx);
+        // нагрудные пластины
+        ctx.strokeStyle = 'rgba(0,0,0,.35)';
+        ctx.lineWidth = 1.2;
+        ctx.beginPath();
+        ctx.moveTo(-w * .34, -4 * s); ctx.lineTo(w * .34, -4 * s);
+        ctx.moveTo(-w * .3, 1 * s); ctx.lineTo(w * .3, 1 * s);
+        ctx.stroke();
+        // герб
+        ctx.fillStyle = kit.trim;
+        ctx.beginPath();
+        ctx.moveTo(0, -9 * s); ctx.lineTo(3 * s, -6 * s);
+        ctx.lineTo(0, -2 * s); ctx.lineTo(-3 * s, -6 * s);
+        ctx.closePath(); ctx.fill();
+        // юбка доспеха
+        ctx.fillStyle = shadeColor(kit.armor, .7);
+        ctx.fillRect(-w * .36, 5 * s, w * .72, 5 * s);
+        break;
+
+      case 'leather':
+        shade(ctx, 0, -2 * s, w * .74, h, tint(kit.cloth), shadeColor(kit.cloth, .6), 4 * s);
+        outline(ctx);
+        // ремни крест-накрест
+        ctx.strokeStyle = kit.trim;
+        ctx.lineWidth = 1.8 * s;
+        ctx.beginPath();
+        ctx.moveTo(-w * .3, -9 * s); ctx.lineTo(w * .28, 2 * s);
+        ctx.moveTo(w * .3, -9 * s); ctx.lineTo(-w * .28, 2 * s);
+        ctx.stroke();
+        // пояс с сумками
+        ctx.fillStyle = shadeColor(kit.trim, .8);
+        ctx.fillRect(-w * .34, 3 * s, w * .68, 2.4 * s);
+        break;
+
+      case 'fur':
+        shade(ctx, 0, -2 * s, w * .8, h, tint(kit.cloth), shadeColor(kit.cloth, .55), 4 * s);
+        outline(ctx);
+        // меховой воротник
+        ctx.fillStyle = '#d8c8a8';
+        ctx.beginPath();
+        for (var i = -3; i <= 3; i++) {
+          ctx.arc(i * 2.4 * s, -10 * s, 2.4 * s, 0, 6.2832);
+        }
+        ctx.fill();
+        // голая грудь и шрамы
+        ctx.fillStyle = tint(kit.skin);
+        ctx.beginPath();
+        ctx.ellipse(0, -3 * s, w * .2, 5 * s, 0, 0, 6.2832);
+        ctx.fill();
+        ctx.strokeStyle = 'rgba(140,40,30,.7)';
+        ctx.lineWidth = 1.2;
+        ctx.beginPath();
+        ctx.moveTo(-2 * s, -6 * s); ctx.lineTo(2 * s, -1 * s);
+        ctx.stroke();
+        break;
+
+      case 'stone':
+        // каменные блоки
+        ctx.fillStyle = tint(kit.armor);
+        ctx.beginPath();
+        ctx.moveTo(-w * .48, -11 * s);
+        ctx.lineTo(w * .48, -11 * s);
+        ctx.lineTo(w * .40, 14 * s);
+        ctx.lineTo(-w * .40, 14 * s);
+        ctx.closePath();
+        ctx.fill();
+        outline(ctx, 2);
+        ctx.strokeStyle = 'rgba(0,0,0,.4)';
+        ctx.lineWidth = 1.4;
+        ctx.beginPath();
+        ctx.moveTo(-w * .44, -3 * s); ctx.lineTo(w * .44, -4 * s);
+        ctx.moveTo(-w * .1, -11 * s); ctx.lineTo(-w * .06, -3 * s);
+        ctx.moveTo(w * .18, -3 * s); ctx.lineTo(w * .14, 14 * s);
+        ctx.stroke();
+        // светящиеся трещины
+        ctx.strokeStyle = kit.trim;
+        ctx.lineWidth = 1.6;
+        ctx.globalAlpha = .8;
+        ctx.beginPath();
+        ctx.moveTo(-w * .2, -8 * s); ctx.lineTo(w * .05, -2 * s); ctx.lineTo(-w * .12, 6 * s);
+        ctx.stroke();
+        ctx.globalAlpha = 1;
+        break;
+
+      default: // apron — мясницкий фартук
+        shade(ctx, 0, -2 * s, w * .8, h, tint(kit.armor), shadeColor(kit.armor, .55), 3 * s);
+        outline(ctx);
+        ctx.fillStyle = '#d8d0c0';
+        ctx.beginPath();
+        ctx.moveTo(-w * .3, -10 * s);
+        ctx.lineTo(w * .3, -10 * s);
+        ctx.lineTo(w * .34, 12 * s);
+        ctx.lineTo(-w * .34, 12 * s);
+        ctx.closePath();
+        ctx.fill();
+        // пятна крови
+        ctx.fillStyle = 'rgba(150,20,20,.55)';
+        ctx.beginPath(); ctx.ellipse(-2 * s, 2 * s, 3 * s, 2 * s, .3, 0, 6.2832); ctx.fill();
+        ctx.beginPath(); ctx.ellipse(3 * s, 7 * s, 2 * s, 1.4 * s, -.4, 0, 6.2832); ctx.fill();
+        break;
+    }
+  }
+
+  function pauldrons(ctx, s, bulk, kit, tint) {
+    if (kit.torso === 'robe') return;   // у магов плечи не бронированы
+    var x = 7.6 * s * bulk;
+    ctx.fillStyle = tint(kit.armor);
+    ctx.beginPath();
+    ctx.ellipse(-x, -9 * s, 4.2 * s, 3.4 * s, -.3, 0, 6.2832);
+    ctx.fill();
+    outline(ctx, 1.4);
+    ctx.beginPath();
+    ctx.ellipse(x, -9 * s, 4.6 * s, 3.8 * s, .3, 0, 6.2832);
+    ctx.fill();
+    outline(ctx, 1.4);
+
+    if (kit.helm === 'horned' || kit.torso === 'plate') {
+      // шипы на правом наплечнике
+      ctx.fillStyle = kit.trim;
+      ctx.beginPath();
+      ctx.moveTo(x + 1 * s, -12 * s);
+      ctx.lineTo(x + 4 * s, -15 * s);
+      ctx.lineTo(x + 3 * s, -10 * s);
+      ctx.closePath();
+      ctx.fill();
+    }
+  }
+
+  /* ---------------- голова и лицо ---------------- */
+  function head(ctx, s, kit, tint, u, t) {
+    var hr = 7.4 * s;
+
+    // шея
+    limb(ctx, 0, -11 * s, 0, -14 * s, 4 * s, shadeColor(kit.skin, .82));
+
+    // череп
+    ctx.fillStyle = tint(kit.skin);
+    ctx.beginPath();
+    ctx.ellipse(.6 * s, -19 * s, hr * .92, hr, 0, 0, 6.2832);
+    ctx.fill();
+    outline(ctx, 1.5);
+
+    face(ctx, s, kit, u, t);
+    headgear(ctx, s, hr, kit, tint, t);
+  }
+
+  function face(ctx, s, kit, u, t) {
+    if (kit.helm === 'greathelm' || kit.helm === 'stone') return;   // лицо закрыто
+
+    var eyeY = -20 * s;
+    var open = kit.helm === 'mask' ? .55 : 1;
+
+    // глаза
+    ctx.fillStyle = '#ffffff';
+    ctx.beginPath(); ctx.ellipse(2.4 * s, eyeY, 1.9 * s, 1.5 * s * open, 0, 0, 6.2832); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(-1.6 * s, eyeY, 1.7 * s, 1.4 * s * open, 0, 0, 6.2832); ctx.fill();
+
+    ctx.fillStyle = '#1a1420';
+    ctx.beginPath(); ctx.arc(3 * s, eyeY, .95 * s, 0, 6.2832); ctx.fill();
+    ctx.beginPath(); ctx.arc(-1.1 * s, eyeY, .9 * s, 0, 6.2832); ctx.fill();
+
+    // брови — задают характер
+    ctx.strokeStyle = 'rgba(30,20,20,.75)';
+    ctx.lineWidth = 1.5 * s;
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    if (kit.torso === 'fur' || kit.torso === 'apron') {         // злые, сдвинутые
+      ctx.moveTo(.8 * s, -22.6 * s); ctx.lineTo(4.4 * s, -21.4 * s);
+      ctx.moveTo(-3.4 * s, -22.4 * s); ctx.lineTo(-.2 * s, -22.8 * s);
+    } else {                                                    // спокойные
+      ctx.moveTo(1 * s, -22.4 * s); ctx.lineTo(4.2 * s, -22.6 * s);
+      ctx.moveTo(-3.2 * s, -22.4 * s); ctx.lineTo(-.4 * s, -22.6 * s);
+    }
+    ctx.stroke();
+
+    // рот
+    ctx.strokeStyle = 'rgba(90,40,40,.7)';
+    ctx.lineWidth = 1.2 * s;
+    ctx.beginPath();
+    ctx.moveTo(-.4 * s, -16.4 * s);
+    ctx.lineTo(2.6 * s, -16.4 * s);
+    ctx.stroke();
+
+    // борода мясника и берсерка
+    if (kit.torso === 'fur' || kit.torso === 'apron') {
+      ctx.fillStyle = 'rgba(40,28,20,.85)';
+      ctx.beginPath();
+      ctx.moveTo(-3.6 * s, -17.4 * s);
+      ctx.quadraticCurveTo(.6 * s, -11 * s, 5 * s, -17.4 * s);
+      ctx.quadraticCurveTo(.6 * s, -15 * s, -3.6 * s, -17.4 * s);
+      ctx.fill();
+    }
+  }
+
+  function headgear(ctx, s, hr, kit, tint, t) {
+    switch (kit.helm) {
+      case 'butcher':                                   // кожаная маска и ремень
+        ctx.fillStyle = '#8a7a68';
+        ctx.beginPath();
+        ctx.ellipse(.6 * s, -23 * s, hr * .95, hr * .55, 0, Math.PI, 0);
+        ctx.fill();
+        ctx.strokeStyle = '#5a4a38';
+        ctx.lineWidth = 1.6 * s;
+        ctx.beginPath();
+        ctx.moveTo(-6 * s, -24 * s); ctx.lineTo(7 * s, -24.6 * s);
+        ctx.stroke();
+        break;
+
+      case 'hood':                                      // капюшон охотника
+        ctx.fillStyle = tint(kit.cloth);
+        ctx.beginPath();
+        ctx.moveTo(-7.6 * s, -16 * s);
+        ctx.quadraticCurveTo(-8.4 * s, -28 * s, .8 * s, -28 * s);
+        ctx.quadraticCurveTo(9 * s, -28 * s, 8 * s, -16 * s);
+        ctx.quadraticCurveTo(4 * s, -22 * s, -7.6 * s, -16 * s);
+        ctx.fill();
+        outline(ctx, 1.4);
+        break;
+
+      case 'horned':                                    // рогатый шлем
+        ctx.fillStyle = tint(kit.armor);
+        ctx.beginPath();
+        ctx.ellipse(.6 * s, -23 * s, hr * 1.02, hr * .72, 0, Math.PI, 0);
+        ctx.fill();
+        outline(ctx, 1.4);
+        ctx.fillStyle = '#e8dcc0';
+        ctx.beginPath();
+        ctx.moveTo(-6 * s, -25 * s);
+        ctx.quadraticCurveTo(-13 * s, -30 * s, -10 * s, -35 * s);
+        ctx.quadraticCurveTo(-8 * s, -29 * s, -3.5 * s, -25.5 * s);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.moveTo(7 * s, -25 * s);
+        ctx.quadraticCurveTo(14 * s, -30 * s, 11 * s, -35 * s);
+        ctx.quadraticCurveTo(9 * s, -29 * s, 4.5 * s, -25.5 * s);
+        ctx.fill();
+        break;
+
+      case 'greathelm':                                 // глухой шлем рыцаря
+        ctx.fillStyle = tint(kit.armor);
+        ctx.beginPath();
+        ctx.ellipse(.6 * s, -19.5 * s, hr * .98, hr * 1.06, 0, 0, 6.2832);
+        ctx.fill();
+        outline(ctx, 1.6);
+        ctx.fillStyle = '#14121a';                      // смотровая щель
+        ctx.fillRect(-3 * s, -21.4 * s, 8 * s, 1.8 * s);
+        ctx.fillRect(.4 * s, -21 * s, 1.4 * s, 5 * s);
+        ctx.fillStyle = kit.trim;                       // гребень
+        ctx.beginPath();
+        ctx.moveTo(-1 * s, -27 * s);
+        ctx.quadraticCurveTo(.8 * s, -32 * s, 3 * s, -26.6 * s);
+        ctx.closePath();
+        ctx.fill();
+        break;
+
+      case 'mask':                                      // маска ассасина
+        ctx.fillStyle = '#1c1430';
+        ctx.beginPath();
+        ctx.ellipse(.6 * s, -22.6 * s, hr * .96, hr * .62, 0, Math.PI, 0);
+        ctx.fill();
+        ctx.fillStyle = '#1c1430';
+        ctx.beginPath();
+        ctx.moveTo(-6.6 * s, -18.6 * s);
+        ctx.lineTo(7.4 * s, -18.6 * s);
+        ctx.lineTo(6 * s, -13 * s);
+        ctx.lineTo(-5 * s, -13 * s);
+        ctx.closePath();
+        ctx.fill();
+        ctx.fillStyle = kit.trim;                       // светящаяся полоса
+        ctx.globalAlpha = .8;
+        ctx.fillRect(-5 * s, -22 * s, 12 * s, 1 * s);
+        ctx.globalAlpha = 1;
+        break;
+
+      case 'wizard':                                    // остроконечная шляпа
+        ctx.fillStyle = tint(kit.cloth);
+        ctx.beginPath();
+        ctx.ellipse(.6 * s, -25 * s, hr * 1.5, hr * .38, 0, 0, 6.2832);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.moveTo(-6.4 * s, -25.4 * s);
+        ctx.quadraticCurveTo(-2 * s, -42 * s, 8 * s, -37 * s);
+        ctx.lineTo(7.6 * s, -25.4 * s);
+        ctx.closePath();
+        ctx.fill();
+        outline(ctx, 1.4);
+        ctx.fillStyle = kit.trim;
+        ctx.beginPath(); ctx.arc(6.6 * s, -36 * s, 1.8 * s, 0, 6.2832); ctx.fill();
+        break;
+
+      case 'flamehood':                                 // капюшон с пламенем
+        ctx.fillStyle = tint(kit.cloth);
+        ctx.beginPath();
+        ctx.moveTo(-7.6 * s, -16 * s);
+        ctx.quadraticCurveTo(-8.6 * s, -29 * s, .8 * s, -29 * s);
+        ctx.quadraticCurveTo(9.4 * s, -29 * s, 8 * s, -16 * s);
+        ctx.quadraticCurveTo(4 * s, -22 * s, -7.6 * s, -16 * s);
+        ctx.fill();
+        outline(ctx, 1.4);
+        ctx.save();
+        ctx.globalCompositeOperation = 'lighter';
+        for (var f = 0; f < 3; f++) {
+          var fx = (f - 1) * 3.4 * s;
+          var fh = (4 + Math.sin(t * 8 + f * 2) * 1.6) * s;
+          ctx.fillStyle = 'rgba(255,150,60,.5)';
+          ctx.beginPath();
+          ctx.moveTo(fx - 1.6 * s, -28 * s);
+          ctx.quadraticCurveTo(fx, -28 * s - fh, fx + 1.6 * s, -28 * s);
+          ctx.fill();
+        }
+        ctx.restore();
+        break;
+
+      case 'leaf':                                      // венок дриады
+        ctx.fillStyle = tint(kit.armor);
+        for (var i = -2; i <= 2; i++) {
+          ctx.beginPath();
+          ctx.ellipse(.6 * s + i * 3 * s, -25.4 * s - Math.abs(i) * .6 * s,
+            2.4 * s, 1.1 * s, i * .35, 0, 6.2832);
+          ctx.fill();
+        }
+        ctx.fillStyle = shadeColor(kit.cloth, 1.4);     // волосы
+        ctx.beginPath();
+        ctx.ellipse(-4.6 * s, -18 * s, 3 * s, 6 * s, .2, 0, 6.2832);
+        ctx.fill();
+        break;
+
+      case 'stone':                                     // каменная голова
+        ctx.fillStyle = tint(kit.armor);
+        ctx.beginPath();
+        ctx.moveTo(-6.4 * s, -14 * s);
+        ctx.lineTo(-7.4 * s, -24 * s);
+        ctx.lineTo(1 * s, -28 * s);
+        ctx.lineTo(8 * s, -23 * s);
+        ctx.lineTo(6.6 * s, -14 * s);
+        ctx.closePath();
+        ctx.fill();
+        outline(ctx, 2);
+        ctx.fillStyle = kit.trim;                       // светящиеся глазницы
+        ctx.shadowColor = kit.trim; ctx.shadowBlur = 10;
+        ctx.fillRect(-4 * s, -22 * s, 3.4 * s, 1.8 * s);
+        ctx.fillRect(2 * s, -22.4 * s, 3.4 * s, 1.8 * s);
+        ctx.shadowBlur = 0;
+        break;
+    }
+  }
+
+  /* ---------------- рука и оружие ---------------- */
+  function armWithWeapon(ctx, s, bulk, kit, tint, aim, swingK, u, t) {
+    var sx = 7 * s * bulk, sy = -9 * s;
+
+    // замах добавляет поворот сверх прицела
+    var extra = 0;
+    switch (u.anim) {
+      case 'heavy': extra = -swingK * 1.0; break;
+      case 'stone': extra = -swingK * 1.25; break;
+      case 'charge': extra = swingK * .15; break;
+      case 'frenzy': extra = Math.sin(swingK * Math.PI * 3) * 1.05; break;
+      case 'swift': extra = Math.sin(swingK * Math.PI * 2) * .9; break;
+      case 'draw':
+      case 'nimble': extra = swingK * .35; break;
+      default: extra = -swingK * .5;
+    }
+    var angle = M().clamp(aim, -1.15, 1.15) + extra;
+
+    // выпад вперёд у колющих
+    var lunge = (u.anim === 'charge') ? swingK * 5 * s : 0;
+
+    ctx.save();
+    ctx.translate(sx + lunge, sy);
+    ctx.rotate(angle);
+
+    var reach = 11 * s;
+    limb(ctx, 0, 0, reach, 0, 5 * s * bulk, tint(kit.skin));   // предплечье
+    ctx.fillStyle = '#3a2a1e';                                  // перчатка
+    ctx.beginPath(); ctx.arc(reach, 0, 2.8 * s, 0, 6.2832); ctx.fill();
+
+    weapon(ctx, s, kit, reach, t, u);
+    ctx.restore();
+  }
+
+  function weapon(ctx, s, kit, hand, t, u) {
+    ctx.save();
+    ctx.translate(hand, 0);
+
+    switch (kit.weapon) {
+      case 'cleaver':                                   // тесак мясника
+        ctx.fillStyle = '#4a3a2a';
+        ctx.fillRect(-1 * s, -1.4 * s, 5 * s, 2.8 * s);
+        ctx.fillStyle = '#d8d8e0';
+        ctx.beginPath();
+        ctx.moveTo(4 * s, -5.6 * s);
+        ctx.lineTo(15 * s, -6.4 * s);
+        ctx.lineTo(15 * s, 4 * s);
+        ctx.lineTo(4 * s, 3.4 * s);
+        ctx.closePath();
+        ctx.fill();
+        outline(ctx, 1.4);
+        ctx.fillStyle = 'rgba(150,20,20,.5)';
+        ctx.fillRect(9 * s, -5 * s, 4 * s, 8 * s);
+        break;
+
+      case 'greataxe':                                  // двусторонний топор
+        ctx.fillStyle = '#4a3020';
+        ctx.fillRect(-4 * s, -1.6 * s, 22 * s, 3.2 * s);
+        ctx.fillStyle = '#e0e0e8';
+        ctx.beginPath();
+        ctx.moveTo(11 * s, -2 * s);
+        ctx.quadraticCurveTo(17 * s, -12 * s, 22 * s, -3 * s);
+        ctx.quadraticCurveTo(17 * s, -1 * s, 11 * s, -2 * s);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.moveTo(11 * s, 2 * s);
+        ctx.quadraticCurveTo(17 * s, 12 * s, 22 * s, 3 * s);
+        ctx.quadraticCurveTo(17 * s, 1 * s, 11 * s, 2 * s);
+        ctx.fill();
+        outline(ctx, 1.4);
+        break;
+
+      case 'sword':                                     // меч рыцаря
+        ctx.fillStyle = kit.trim;
+        ctx.fillRect(-1 * s, -3.4 * s, 2.4 * s, 6.8 * s);   // гарда
+        ctx.fillStyle = '#e8e8f0';
+        ctx.beginPath();
+        ctx.moveTo(2 * s, -2 * s);
+        ctx.lineTo(21 * s, -1 * s);
+        ctx.lineTo(23 * s, 0);
+        ctx.lineTo(21 * s, 1 * s);
+        ctx.lineTo(2 * s, 2 * s);
+        ctx.closePath();
+        ctx.fill();
+        outline(ctx, 1.2);
+        ctx.strokeStyle = 'rgba(255,255,255,.6)';
+        ctx.lineWidth = .8;
+        ctx.beginPath(); ctx.moveTo(3 * s, 0); ctx.lineTo(20 * s, 0); ctx.stroke();
+        break;
+
+      case 'daggers':                                   // парные клинки
+        ctx.fillStyle = '#d0d0e0';
+        ctx.beginPath();
+        ctx.moveTo(1 * s, -1.6 * s); ctx.lineTo(12 * s, -3 * s); ctx.lineTo(1 * s, 0);
+        ctx.closePath(); ctx.fill();
+        ctx.beginPath();
+        ctx.moveTo(1 * s, 1.6 * s); ctx.lineTo(11 * s, 3.4 * s); ctx.lineTo(1 * s, 0);
+        ctx.closePath(); ctx.fill();
+        outline(ctx, 1.1);
+        break;
+
+      case 'bow':
+      case 'bow_leaf':                                  // лук с тетивой
+        ctx.strokeStyle = kit.weapon === 'bow_leaf' ? '#5a8a3a' : '#6a4a2a';
+        ctx.lineWidth = 2.6 * s;
+        ctx.beginPath();
+        ctx.arc(2 * s, 0, 11 * s, -1.25, 1.25);
+        ctx.stroke();
+        ctx.strokeStyle = 'rgba(240,240,255,.75)';
+        ctx.lineWidth = 1 * s;
+        var pull = (u.swing || 0) > 0 ? -3.5 * s : 0;
+        ctx.beginPath();
+        ctx.moveTo(2 * s + Math.cos(-1.25) * 11 * s, Math.sin(-1.25) * 11 * s);
+        ctx.lineTo(2 * s + pull, 0);
+        ctx.lineTo(2 * s + Math.cos(1.25) * 11 * s, Math.sin(1.25) * 11 * s);
+        ctx.stroke();
+        if (kit.weapon === 'bow_leaf') {
+          ctx.fillStyle = '#8fd66a';
+          ctx.beginPath(); ctx.ellipse(2 * s, -10 * s, 2.4 * s, 1.1 * s, .4, 0, 6.2832); ctx.fill();
+          ctx.beginPath(); ctx.ellipse(2 * s, 10 * s, 2.4 * s, 1.1 * s, -.4, 0, 6.2832); ctx.fill();
+        }
+        break;
+
+      case 'staff_ice':
+      case 'staff_orb':
+      case 'staff_fire':                                // посохи
+        ctx.fillStyle = '#5a4030';
+        ctx.fillRect(-6 * s, -1.4 * s, 24 * s, 2.8 * s);
+        var orbX = 18 * s;
+        var glow = kit.weapon === 'staff_ice' ? '#a8e4ff'
+          : kit.weapon === 'staff_fire' ? '#ff9a3a' : '#c9a0ff';
+        ctx.shadowColor = glow;
+        ctx.shadowBlur = 16 + Math.sin(t * 4) * 5;
+        ctx.fillStyle = glow;
+        if (kit.weapon === 'staff_ice') {
+          ctx.beginPath();
+          ctx.moveTo(orbX, -5 * s); ctx.lineTo(orbX + 4 * s, 0);
+          ctx.lineTo(orbX, 5 * s); ctx.lineTo(orbX - 4 * s, 0);
+          ctx.closePath(); ctx.fill();
+        } else {
+          ctx.beginPath(); ctx.arc(orbX, 0, 3.6 * s, 0, 6.2832); ctx.fill();
+        }
+        ctx.shadowBlur = 0;
+        ctx.fillStyle = 'rgba(255,255,255,.75)';
+        ctx.beginPath(); ctx.arc(orbX - 1 * s, -1 * s, 1.2 * s, 0, 6.2832); ctx.fill();
+        break;
+
+      case 'fists':                                     // каменный кулак
+        ctx.fillStyle = kit.armor;
+        ctx.beginPath();
+        ctx.moveTo(0, -5 * s);
+        ctx.lineTo(9 * s, -6 * s);
+        ctx.lineTo(11 * s, 0);
+        ctx.lineTo(9 * s, 6 * s);
+        ctx.lineTo(0, 5 * s);
+        ctx.closePath();
+        ctx.fill();
+        outline(ctx, 1.8);
+        ctx.strokeStyle = kit.trim;
+        ctx.lineWidth = 1.4;
+        ctx.globalAlpha = .8;
+        ctx.beginPath(); ctx.moveTo(3 * s, -3 * s); ctx.lineTo(7 * s, 2 * s); ctx.stroke();
+        ctx.globalAlpha = 1;
+        break;
+    }
+    ctx.restore();
+  }
+
+  /* ============================================================
+                             ВРАГИ
+     ============================================================ */
+  function enemy(ctx, u, bodyColor, c2, glow, time) {
+    if (u.isBoss) { boss(ctx, u, bodyColor, c2, glow, time); return; }
+    if (u.shape === 'e_dummy') { dummy(ctx, u, bodyColor, c2, glow); return; }
+
+    var m = M(), r = u.r, t = time || 0, i, a, rr;
+    var wob = u.wob || 0;
+    var walk = Math.sin((u.step || 0) * 2.2 + wob);
+
+    ctx.save();
+
+    /* --- конечности: у тварей они есть, но кривые --- */
+    ctx.strokeStyle = c2;
+    ctx.lineCap = 'round';
+    ctx.lineWidth = r * .26;
+    for (i = -1; i <= 1; i += 2) {
+      ctx.beginPath();
+      ctx.moveTo(-r * .2, i * r * .35);
+      ctx.quadraticCurveTo(-r * .7, i * r * .9, -r * .55 + walk * r * .25 * i, i * r * 1.35);
+      ctx.stroke();
+    }
+
+    /* --- рваная масса тела --- */
+    ctx.fillStyle = c2;
+    ctx.beginPath();
+    var spikes = u.shape === 'e_swarm' ? 5 : 9;
+    for (i = 0; i < spikes; i++) {
+      a = i / spikes * 6.2832;
+      rr = r * (i % 2 ? 1.28 : .78) * (1 + Math.sin(t * 3 + i + wob) * .04);
+      if (i === 0) ctx.moveTo(Math.cos(a) * rr, Math.sin(a) * rr);
+      else ctx.lineTo(Math.cos(a) * rr, Math.sin(a) * rr);
+    }
+    ctx.closePath();
+    ctx.fill();
+
+    /* --- гранёное ядро --- */
+    var g = ctx.createRadialGradient(0, 0, r * .1, 0, 0, r * .95);
+    g.addColorStop(0, m.mixWhite(u.c1, .18));
+    g.addColorStop(1, c2);
+    ctx.fillStyle = g;
+    ctx.beginPath();
+    for (i = 0; i < 6; i++) {
+      a = i / 6 * 6.2832 + .4;
+      if (i === 0) ctx.moveTo(Math.cos(a) * r * .72, Math.sin(a) * r * .72);
+      else ctx.lineTo(Math.cos(a) * r * .72, Math.sin(a) * r * .72);
+    }
+    ctx.closePath();
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(0,0,0,.6)';
+    ctx.lineWidth = 1.6;
+    ctx.stroke();
+
+    /* --- глаза-щели --- */
+    ctx.shadowColor = glow; ctx.shadowBlur = 12;
+    ctx.fillStyle = glow;
+    ctx.beginPath();
+    ctx.moveTo(r * .2, -r * .34); ctx.lineTo(r * .72, -r * .2); ctx.lineTo(r * .2, -r * .1);
+    ctx.closePath(); ctx.fill();
+    ctx.beginPath();
+    ctx.moveTo(r * .2, r * .34); ctx.lineTo(r * .72, r * .2); ctx.lineTo(r * .2, r * .1);
+    ctx.closePath(); ctx.fill();
+    ctx.shadowBlur = 0;
+
+    mobDetails(ctx, u, r, glow, t);
+    ctx.restore();
+  }
+
+  function mobDetails(ctx, u, r, glow, t) {
+    var i, a;
+    ctx.fillStyle = glow;
+    ctx.strokeStyle = glow;
+
+    switch (u.shape) {
+      case 'e_spitter':
+        ctx.lineWidth = 2.5;
+        ctx.beginPath(); ctx.moveTo(r * .8, 0); ctx.lineTo(r * 1.9, 0); ctx.stroke();
+        ctx.beginPath(); ctx.arc(r * 1.9, 0, r * .16, 0, 6.2832); ctx.fill();
+        break;
+      case 'e_brute':
+        ctx.beginPath();
+        ctx.moveTo(r * .6, -r * 1.1); ctx.lineTo(r * 1.1, -r * .3); ctx.lineTo(r * .5, -r * .5);
+        ctx.closePath(); ctx.fill();
+        ctx.beginPath();
+        ctx.moveTo(r * .6, r * 1.1); ctx.lineTo(r * 1.1, r * .3); ctx.lineTo(r * .5, r * .5);
+        ctx.closePath(); ctx.fill();
+        break;
+      case 'e_caster':
+      case 'e_hex':
+        for (i = 0; i < 3; i++) {
+          a = t * 2.4 + i * 2.094;
+          ctx.globalAlpha = .8;
+          ctx.beginPath(); ctx.arc(Math.cos(a) * r * 1.5, Math.sin(a) * r * .6, 3.2, 0, 6.2832); ctx.fill();
+        }
+        ctx.globalAlpha = 1;
+        break;
+      case 'e_bomb':
+        ctx.globalAlpha = .35 + (.5 + Math.sin(t * 9 + (u.wob || 0)) * .5) * .5;
+        ctx.beginPath(); ctx.arc(0, 0, r * .5, 0, 6.2832); ctx.fill();
+        ctx.globalAlpha = 1;
+        break;
+      case 'e_healer':
+        ctx.lineWidth = 3;
+        ctx.beginPath(); ctx.moveTo(-r * .35, -r * .9); ctx.lineTo(r * .35, -r * .9); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(0, -r * 1.25); ctx.lineTo(0, -r * .55); ctx.stroke();
+        break;
+      case 'e_shell':
+        ctx.lineWidth = 3.5; ctx.globalAlpha = .8;
+        ctx.beginPath(); ctx.arc(0, 0, r * 1.12, -1.1, 1.1); ctx.stroke();
+        ctx.globalAlpha = 1;
+        break;
+      case 'e_swarm':
+        ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.moveTo(-r * .3, -r * .8); ctx.lineTo(r * .9, -r * .3); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(-r * .3, r * .8); ctx.lineTo(r * .9, r * .3); ctx.stroke();
+        break;
+      case 'e_stalker':
+        ctx.lineWidth = 2.2;
+        for (i = -1; i <= 1; i += 2) {
+          ctx.beginPath();
+          ctx.moveTo(r * .5, i * r * .5); ctx.lineTo(r * 1.6, i * r * .25);
+          ctx.stroke();
+        }
+        break;
+      case 'e_skeleton':
+        ctx.lineWidth = 2;
+        ctx.globalAlpha = .8;
+        for (i = -1; i <= 1; i++) {
+          ctx.beginPath();
+          ctx.moveTo(-r * .3, i * r * .3); ctx.lineTo(r * .5, i * r * .34);
+          ctx.stroke();
+        }
+        ctx.globalAlpha = 1;
+        break;
+      case 'e_mirror':
+        ctx.globalAlpha = .5;
+        ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.arc(0, 0, r * 1.25, 0, 6.2832); ctx.stroke();
+        ctx.globalAlpha = 1;
+        break;
+    }
+  }
+
+  function dummy(ctx, u, c1, c2, glow) {
+    var r = u.r;
+    // столб
+    ctx.fillStyle = '#3a3028';
+    ctx.fillRect(-r * .18, 0, r * .36, r * 1.5);
+    // мишень
+    ctx.fillStyle = '#e8e0d0';
+    ctx.beginPath(); ctx.arc(0, -r * .2, r, 0, 6.2832); ctx.fill();
+    ctx.strokeStyle = 'rgba(0,0,0,.4)'; ctx.lineWidth = 1.6; ctx.stroke();
+    var ring = ['#c02020', '#e8e0d0', '#c02020'];
+    for (var i = 0; i < 3; i++) {
+      ctx.fillStyle = ring[i];
+      ctx.beginPath(); ctx.arc(0, -r * .2, r * (1 - (i + 1) * .25), 0, 6.2832); ctx.fill();
+    }
+  }
+
+  /* ============================================================
+                    БОССЫ — у каждого свой силуэт
+     ============================================================ */
+  function boss(ctx, u, c1, c2, glow, t) {
+    var enraged = u.phase === 2;
+    ctx.save();
+    if (enraged) { ctx.shadowColor = glow; ctx.shadowBlur = 18; }
+
+    switch (u.shape) {
+      case 'e_boss_bone': bossBone(ctx, u, c1, c2, glow, t); break;
+      case 'e_boss_maw': bossMaw(ctx, u, c1, c2, glow, t); break;
+      case 'e_boss_void': bossVoid(ctx, u, c1, c2, glow, t); break;
+      case 'e_boss_forge': bossForge(ctx, u, c1, c2, glow, t); break;
+      default: bossBone(ctx, u, c1, c2, glow, t);
+    }
+    ctx.restore();
+  }
+
+  /** Костяной Владыка: череп с рогами, рёбра, коса. */
+  function bossBone(ctx, u, c1, c2, glow, t) {
+    var r = u.r, breathe = Math.sin(t * 2) * .03 + 1;
+    ctx.save();
+    ctx.scale(breathe, 1 / breathe);
+
+    // плащ-саван
+    ctx.fillStyle = c2;
+    ctx.beginPath();
+    ctx.moveTo(-r * .9, -r * .2);
+    ctx.quadraticCurveTo(-r * 1.5, r * .9, -r * .6, r * 1.5);
+    ctx.lineTo(r * .7, r * 1.5);
+    ctx.quadraticCurveTo(r * 1.4, r * .8, r * .9, -r * .2);
+    ctx.closePath(); ctx.fill();
+
+    // грудная клетка
+    ctx.strokeStyle = c1; ctx.lineWidth = r * .13; ctx.lineCap = 'round';
+    for (var i = 0; i < 4; i++) {
+      var y = -r * .3 + i * r * .32;
+      ctx.beginPath();
+      ctx.moveTo(-r * .55, y);
+      ctx.quadraticCurveTo(0, y + r * .22, r * .55, y);
+      ctx.stroke();
+    }
+    // позвоночник
+    ctx.lineWidth = r * .16;
+    ctx.beginPath(); ctx.moveTo(0, -r * .55); ctx.lineTo(0, r * .9); ctx.stroke();
+
+    // череп
+    ctx.fillStyle = c1;
+    ctx.beginPath(); ctx.ellipse(0, -r * .95, r * .62, r * .55, 0, 0, 6.2832); ctx.fill();
+    ctx.fillStyle = '#0a0a0e';
+    ctx.beginPath(); ctx.ellipse(-r * .24, -r * 1.0, r * .16, r * .19, 0, 0, 6.2832); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(r * .24, -r * 1.0, r * .16, r * .19, 0, 0, 6.2832); ctx.fill();
+    ctx.shadowColor = glow; ctx.shadowBlur = 14;
+    ctx.fillStyle = glow;
+    ctx.beginPath(); ctx.arc(-r * .24, -r * 1.0, r * .08, 0, 6.2832); ctx.fill();
+    ctx.beginPath(); ctx.arc(r * .24, -r * 1.0, r * .08, 0, 6.2832); ctx.fill();
+    ctx.shadowBlur = 0;
+    // челюсть
+    ctx.fillStyle = c1;
+    ctx.fillRect(-r * .3, -r * .72, r * .6, r * .18);
+    ctx.strokeStyle = c2; ctx.lineWidth = 1.4;
+    for (var j = -2; j <= 2; j++) {
+      ctx.beginPath();
+      ctx.moveTo(j * r * .12, -r * .72); ctx.lineTo(j * r * .12, -r * .54);
+      ctx.stroke();
+    }
+    // рога
+    ctx.fillStyle = c1;
+    ctx.beginPath();
+    ctx.moveTo(-r * .5, -r * 1.3);
+    ctx.quadraticCurveTo(-r * 1.25, -r * 1.9, -r * .85, -r * 2.25);
+    ctx.quadraticCurveTo(-r * .8, -r * 1.6, -r * .28, -r * 1.35);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.moveTo(r * .5, -r * 1.3);
+    ctx.quadraticCurveTo(r * 1.25, -r * 1.9, r * .85, -r * 2.25);
+    ctx.quadraticCurveTo(r * .8, -r * 1.6, r * .28, -r * 1.35);
+    ctx.fill();
+
+    // коса
+    ctx.save();
+    ctx.rotate(Math.sin(t * 1.4) * .06);
+    ctx.fillStyle = '#4a4438';
+    ctx.fillRect(r * .8, -r * 1.6, r * .13, r * 2.8);
+    ctx.fillStyle = '#e8e4d4';
+    ctx.beginPath();
+    ctx.moveTo(r * .86, -r * 1.55);
+    ctx.quadraticCurveTo(r * 2.2, -r * 1.9, r * 2.0, -r * .7);
+    ctx.quadraticCurveTo(r * 1.5, -r * 1.35, r * .86, -r * 1.25);
+    ctx.fill();
+    ctx.restore();
+
+    ctx.restore();
+  }
+
+  /** Пожиратель Бездны: сплошная пасть с зубами и щупальцами. */
+  function bossMaw(ctx, u, c1, c2, glow, t) {
+    var r = u.r, open = .5 + Math.sin(t * 1.8) * .5;
+    var i, a;
+
+    // щупальца
+    ctx.strokeStyle = c2; ctx.lineWidth = r * .16; ctx.lineCap = 'round';
+    for (i = 0; i < 6; i++) {
+      a = i / 6 * 6.2832 + t * .3;
+      var len = r * (1.5 + Math.sin(t * 3 + i) * .3);
+      ctx.beginPath();
+      ctx.moveTo(Math.cos(a) * r * .6, Math.sin(a) * r * .6);
+      ctx.quadraticCurveTo(
+        Math.cos(a + .5) * len, Math.sin(a + .5) * len,
+        Math.cos(a + .2) * len * 1.25, Math.sin(a + .2) * len * 1.25
+      );
+      ctx.stroke();
+    }
+
+    // туша
+    var g = ctx.createRadialGradient(0, 0, r * .2, 0, 0, r * 1.15);
+    g.addColorStop(0, c1);
+    g.addColorStop(1, c2);
+    ctx.fillStyle = g;
+    ctx.beginPath();
+    ctx.ellipse(0, 0, r * 1.1, r * .98, 0, 0, 6.2832);
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(0,0,0,.55)'; ctx.lineWidth = 2; ctx.stroke();
+
+    // пасть
+    ctx.fillStyle = '#160208';
+    ctx.beginPath();
+    ctx.ellipse(r * .12, 0, r * .66, r * (.28 + open * .34), 0, 0, 6.2832);
+    ctx.fill();
+    ctx.shadowColor = glow; ctx.shadowBlur = 20;
+    ctx.fillStyle = glow;
+    ctx.globalAlpha = .35 + open * .3;
+    ctx.beginPath();
+    ctx.ellipse(r * .12, 0, r * .3, r * (.12 + open * .2), 0, 0, 6.2832);
+    ctx.fill();
+    ctx.globalAlpha = 1; ctx.shadowBlur = 0;
+
+    // зубы
+    ctx.fillStyle = '#f0e8e0';
+    for (i = -3; i <= 3; i++) {
+      var tx = r * .12 + i * r * .18;
+      var th = r * (.13 + open * .1);
+      ctx.beginPath();
+      ctx.moveTo(tx - r * .07, -r * (.24 + open * .3));
+      ctx.lineTo(tx + r * .07, -r * (.24 + open * .3));
+      ctx.lineTo(tx, -r * (.24 + open * .3) + th);
+      ctx.closePath(); ctx.fill();
+      ctx.beginPath();
+      ctx.moveTo(tx - r * .07, r * (.24 + open * .3));
+      ctx.lineTo(tx + r * .07, r * (.24 + open * .3));
+      ctx.lineTo(tx, r * (.24 + open * .3) - th);
+      ctx.closePath(); ctx.fill();
+    }
+
+    // глаза кольцом
+    ctx.fillStyle = glow;
+    for (i = 0; i < 5; i++) {
+      a = -1.1 + i * .55;
+      ctx.beginPath();
+      ctx.arc(Math.cos(a) * r * .82 - r * .3, Math.sin(a) * r * .6 - r * .5, r * .07, 0, 6.2832);
+      ctx.fill();
+    }
+  }
+
+  /** Архонт Пустоты: парящая мантия без ног и вращающиеся кольца. */
+  function bossVoid(ctx, u, c1, c2, glow, t) {
+    var r = u.r, i, a;
+
+    // орбитальные кольца
+    ctx.strokeStyle = glow;
+    ctx.globalAlpha = .5;
+    for (i = 0; i < 3; i++) {
+      ctx.lineWidth = 2;
+      ctx.save();
+      ctx.rotate(t * (.4 + i * .25) * (i % 2 ? -1 : 1));
+      ctx.beginPath();
+      ctx.ellipse(0, 0, r * (1.35 + i * .22), r * (.38 + i * .12), i * .6, 0, 6.2832);
+      ctx.stroke();
+      ctx.restore();
+    }
+    ctx.globalAlpha = 1;
+
+    // мантия
+    var float = Math.sin(t * 1.6) * r * .07;
+    ctx.save();
+    ctx.translate(0, float);
+    ctx.fillStyle = c2;
+    ctx.beginPath();
+    ctx.moveTo(-r * .78, -r * .5);
+    ctx.quadraticCurveTo(-r * 1.15, r * .8, -r * .35, r * 1.45);
+    ctx.quadraticCurveTo(0, r * 1.15, r * .35, r * 1.45);
+    ctx.quadraticCurveTo(r * 1.15, r * .8, r * .78, -r * .5);
+    ctx.closePath();
+    ctx.fill();
+    ctx.strokeStyle = glow; ctx.lineWidth = 1.6; ctx.globalAlpha = .55; ctx.stroke(); ctx.globalAlpha = 1;
+
+    // светящееся ядро вместо лица
+    ctx.fillStyle = '#0a0c18';
+    ctx.beginPath(); ctx.ellipse(0, -r * .68, r * .5, r * .56, 0, 0, 6.2832); ctx.fill();
+    ctx.shadowColor = glow; ctx.shadowBlur = 24;
+    ctx.fillStyle = glow;
+    ctx.beginPath();
+    ctx.moveTo(0, -r * 1.0);
+    ctx.lineTo(r * .2, -r * .68);
+    ctx.lineTo(0, -r * .36);
+    ctx.lineTo(-r * .2, -r * .68);
+    ctx.closePath(); ctx.fill();
+    ctx.shadowBlur = 0;
+
+    // корона осколков
+    ctx.fillStyle = c1;
+    for (i = -2; i <= 2; i++) {
+      ctx.beginPath();
+      ctx.moveTo(i * r * .22 - r * .06, -r * 1.05);
+      ctx.lineTo(i * r * .22, -r * (1.35 + Math.abs(i) * -.08));
+      ctx.lineTo(i * r * .22 + r * .06, -r * 1.05);
+      ctx.closePath(); ctx.fill();
+    }
+
+    // руки-тени
+    ctx.strokeStyle = c1; ctx.lineWidth = r * .13; ctx.lineCap = 'round';
+    for (i = -1; i <= 1; i += 2) {
+      var sway = Math.sin(t * 2 + i) * r * .12;
+      ctx.beginPath();
+      ctx.moveTo(i * r * .55, -r * .35);
+      ctx.quadraticCurveTo(i * r * .95, r * .1 + sway, i * r * .78, r * .55);
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
+
+  /** Кузнец Пепла: наковальня-плечи, молот, светящиеся трещины. */
+  function bossForge(ctx, u, c1, c2, glow, t) {
+    var r = u.r, i;
+    var heat = .6 + Math.sin(t * 3) * .4;
+
+    // ноги-колонны
+    ctx.fillStyle = c2;
+    ctx.fillRect(-r * .62, r * .3, r * .42, r * 1.2);
+    ctx.fillRect(r * .2, r * .3, r * .42, r * 1.2);
+
+    // корпус
+    var g = ctx.createLinearGradient(-r, -r, r, r);
+    g.addColorStop(0, c1);
+    g.addColorStop(1, c2);
+    ctx.fillStyle = g;
+    ctx.beginPath();
+    ctx.moveTo(-r * .95, -r * .6);
+    ctx.lineTo(r * .95, -r * .6);
+    ctx.lineTo(r * .7, r * .55);
+    ctx.lineTo(-r * .7, r * .55);
+    ctx.closePath();
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(0,0,0,.55)'; ctx.lineWidth = 2.2; ctx.stroke();
+
+    // светящиеся трещины
+    ctx.strokeStyle = glow;
+    ctx.shadowColor = glow; ctx.shadowBlur = 12 * heat;
+    ctx.lineWidth = 2.2;
+    ctx.globalAlpha = heat;
+    ctx.beginPath();
+    ctx.moveTo(-r * .6, -r * .4); ctx.lineTo(-r * .15, r * .05); ctx.lineTo(-r * .45, r * .5);
+    ctx.moveTo(r * .55, -r * .35); ctx.lineTo(r * .2, r * .15);
+    ctx.stroke();
+    ctx.globalAlpha = 1; ctx.shadowBlur = 0;
+
+    // плечи-наковальни
+    ctx.fillStyle = c2;
+    for (i = -1; i <= 1; i += 2) {
+      ctx.beginPath();
+      ctx.moveTo(i * r * .8, -r * 1.0);
+      ctx.lineTo(i * r * 1.45, -r * .85);
+      ctx.lineTo(i * r * 1.3, -r * .35);
+      ctx.lineTo(i * r * .78, -r * .5);
+      ctx.closePath();
+      ctx.fill();
+      ctx.strokeStyle = 'rgba(0,0,0,.5)'; ctx.lineWidth = 1.8; ctx.stroke();
+    }
+
+    // голова в маске кузнеца
+    ctx.fillStyle = c2;
+    ctx.beginPath();
+    ctx.ellipse(0, -r * .95, r * .42, r * .38, 0, 0, 6.2832);
+    ctx.fill();
+    ctx.fillStyle = glow;
+    ctx.shadowColor = glow; ctx.shadowBlur = 14;
+    ctx.fillRect(-r * .28, -r * 1.02, r * .56, r * .12);
+    ctx.shadowBlur = 0;
+
+    // молот
+    ctx.save();
+    ctx.rotate(Math.sin(t * 1.2) * .08);
+    ctx.fillStyle = '#4a3a2a';
+    ctx.fillRect(r * .9, -r * .2, r * 1.5, r * .16);
+    ctx.fillStyle = c1;
+    ctx.fillRect(r * 2.1, -r * .62, r * .55, r * .95);
+    ctx.strokeStyle = 'rgba(0,0,0,.5)'; ctx.lineWidth = 1.6;
+    ctx.strokeRect(r * 2.1, -r * .62, r * .55, r * .95);
+    ctx.globalAlpha = heat * .7;
+    ctx.fillStyle = glow;
+    ctx.fillRect(r * 2.16, -r * .5, r * .43, r * .18);
+    ctx.globalAlpha = 1;
+    ctx.restore();
+  }
+
+  return { hero: hero, enemy: enemy, KITS: KITS };
+})());

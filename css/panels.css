@@ -1,0 +1,163 @@
+/* ============================================================
+   panels — оверлеи: лавка, умения, связки, пауза, поражение,
+   справка. Общий каркас .panel и его наполнение.
+   ============================================================ */
+
+.panel{
+  width:min(94vw,560px);max-height:92vh;display:flex;flex-direction:column;
+  background:var(--panel);border:1px solid var(--line);border-radius:18px;overflow:hidden;
+  box-shadow:0 24px 60px rgba(0,0,0,.6);
+}
+.panel-wide{width:min(96vw,760px)}
+.panel-sm{width:min(92vw,380px)}
+
+.panel-head{
+  display:flex;align-items:center;gap:12px;padding:14px 16px;
+  border-bottom:1px solid var(--line);background:var(--panel2);
+}
+.panel-head h2{font-size:17px;font-weight:900;letter-spacing:2px}
+.panel-head .cur,.panel-head .pts{margin-left:auto;font-size:13px}
+
+.panel-foot{
+  display:flex;gap:10px;padding:12px 16px;
+  border-top:1px solid var(--line);background:var(--panel2);
+}
+.panel-foot.col{flex-direction:column}
+.panel-foot.wrap{flex-wrap:wrap}
+.panel-foot .btn{flex:1}
+.panel-foot.wrap .btn{min-width:110px}
+.panel-foot.wrap #btn-next-wave{flex:2}
+
+/* ============================ ЛАВКА ============================ */
+.shop-body{padding:14px 16px;overflow-y:auto;touch-action:pan-y}
+
+.inv-row{margin-bottom:10px}
+.inv-label{font-size:11px;color:var(--dim);letter-spacing:1px;margin-bottom:5px}
+.inv-slots{display:flex;gap:7px;flex-wrap:wrap}
+
+.isl{
+  width:42px;height:42px;border-radius:10px;background:var(--bg2);
+  border:1px dashed var(--line);display:flex;align-items:center;justify-content:center;
+  font-size:10px;color:var(--dim);text-align:center;padding:2px;line-height:1.05;overflow:hidden;
+}
+.isl.full{border-style:solid;border-color:var(--gold);color:var(--txt);font-weight:800;cursor:pointer}
+.isl.sel{outline:2px solid var(--acc);outline-offset:1px}
+.inv-slots .isl{width:52px;height:52px;font-size:9.5px}
+
+.sell-panel{
+  display:flex;align-items:center;gap:10px;margin-top:9px;padding:9px 11px;
+  background:var(--bg2);border:1px solid var(--line);border-radius:11px;
+}
+.sp-info{flex:1;min-width:0}
+.sp-info b{font-size:13.5px}
+.sp-info p{color:var(--dim);font-size:11.5px;margin-top:2px}
+.btn-sell{
+  padding:9px 14px;font-size:12.5px;
+  background:linear-gradient(180deg,#e8a33d,#c07a10);border-color:#ffc043;color:#2a1a00;
+  display:flex;align-items:center;gap:5px;white-space:nowrap;
+}
+
+.stat-strip{display:block;margin-bottom:12px}
+.stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(78px,1fr));gap:6px}
+.stat-grid .st{padding:5px 7px}
+.stat-grid .st b{font-size:13px}
+
+.shop-tabs{
+  display:flex;gap:5px;margin:2px 0 10px;overflow-x:auto;touch-action:pan-x;padding-bottom:3px;
+}
+.shop-tab{
+  flex:none;padding:5px 11px;border-radius:8px;background:var(--bg2);border:1px solid var(--line);
+  font-size:11px;font-weight:800;letter-spacing:.5px;color:var(--dim);
+}
+.shop-tab.on{background:var(--panel2);border-color:var(--acc);color:var(--txt)}
+
+.shop-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px}
+.item{
+  position:relative;background:var(--bg2);border:1px solid var(--line);border-radius:11px;
+  padding:9px;cursor:pointer;transition:border-color .15s,transform .08s;
+}
+.item:active{transform:scale(.98)}
+.item.cant{opacity:.45;cursor:default}
+.item.owned{opacity:.75}
+.item.owned::after{content:"✓";position:absolute;top:6px;right:8px;color:var(--ok);font-weight:900;font-size:13px}
+.item b{font-size:13px;display:block;margin-bottom:3px}
+.item p{color:var(--dim);font-size:11px;line-height:1.35}
+.item .price{display:flex;align-items:center;gap:4px;margin-top:6px;font-weight:800;font-size:12px;color:var(--gold)}
+
+/* ============================ УМЕНИЯ ============================ */
+.skill-up-list{
+  padding:14px 16px;overflow-y:auto;display:flex;flex-direction:column;gap:9px;touch-action:pan-y;
+}
+.su{display:flex;gap:10px;align-items:center;background:var(--bg2);border:1px solid var(--line);border-radius:11px;padding:10px}
+.su .sk-ic{width:40px;height:40px}
+.su .btn{padding:9px 13px;font-size:13px}
+.su-info{flex:1;min-width:0}
+.su-info b{font-size:14px}
+.su-info p{color:var(--dim);font-size:11.5px;margin-top:2px}
+.su-info .kbd{
+  display:inline-block;min-width:15px;padding:0 4px;border-radius:4px;
+  background:var(--panel2);border:1px solid var(--line);
+  font-size:10px;font-weight:800;text-align:center;
+}
+.su-info .dim{color:var(--dim);font-weight:600;font-size:12px}
+.su-pips{display:flex;gap:3px;margin-top:5px}
+.pip{width:15px;height:5px;border-radius:3px;background:#2a3355}
+.pip.on{background:var(--acc)}
+
+/* ============================ СВЯЗКИ АРКАНА ============================ */
+.combo-box{margin-top:14px;background:var(--bg2);border:1px solid var(--line);border-radius:12px;overflow:hidden}
+.combo-head{padding:9px 12px;background:var(--panel2);font-size:11px;font-weight:900;letter-spacing:1px;color:var(--acc)}
+.combo-row{display:flex;gap:10px;padding:9px 12px;border-top:1px solid var(--line);align-items:flex-start}
+.combo-keys{display:flex;gap:3px;flex:none;padding-top:2px}
+.rg{
+  width:20px;height:20px;border-radius:6px;display:flex;align-items:center;justify-content:center;
+  font-size:11px;color:#fff;text-shadow:0 1px 2px rgba(0,0,0,.6);
+}
+.combo-info{min-width:0}
+.combo-info b{font-size:13px;display:block}
+.combo-info p{color:var(--dim);font-size:11.5px;line-height:1.4;margin-top:2px}
+.combo-info small{display:block;color:var(--mp);font-size:10.5px;font-weight:700;margin-top:3px}
+
+/* ============================ ПАУЗА ============================ */
+.pause-body{padding:16px}
+.switch{display:flex;align-items:center;gap:10px;padding:9px 0;font-size:14px;cursor:pointer}
+.switch input{display:none}
+.switch span{
+  width:42px;height:24px;border-radius:14px;background:#2a3355;position:relative;
+  transition:background .18s;flex:none;
+}
+.switch span::after{
+  content:"";position:absolute;top:3px;left:3px;width:18px;height:18px;border-radius:50%;
+  background:#fff;transition:transform .18s;
+}
+.switch input:checked + span{background:var(--ok)}
+.switch input:checked + span::after{transform:translateX(18px)}
+
+/* ============================ ПОРАЖЕНИЕ ============================ */
+.over-body{padding:18px 16px;text-align:center}
+.over-wave{font-size:15px;color:var(--dim);margin-bottom:8px}
+.over-wave b{color:var(--acc);font-size:22px}
+.over-kills{font-size:13px;color:var(--dim);margin-bottom:10px}
+.over-kills b{color:var(--txt)}
+.over-rew{display:flex;align-items:center;justify-content:center;gap:7px;font-size:17px;font-weight:800}
+
+/* ============================ СПРАВКА ============================ */
+.howto-body{padding:14px 16px;overflow-y:auto;touch-action:pan-y}
+.howto-body h3{font-size:14px;color:var(--acc);margin:12px 0 5px;letter-spacing:1px}
+.howto-body h3:first-child{margin-top:0}
+.howto-body p{font-size:13.5px;color:var(--dim);line-height:1.55}
+.howto-body kbd{
+  background:var(--panel2);border:1px solid var(--line);border-radius:5px;padding:1px 6px;
+  font-size:12px;color:var(--txt);font-family:inherit;font-weight:800;
+}
+
+/* ============================ АДАПТИВ ============================ */
+@media (max-width:720px){
+  .shop-grid{grid-template-columns:repeat(auto-fill,minmax(132px,1fr))}
+  .inv-slots .isl{width:46px;height:46px;font-size:9px}
+  .sell-panel{flex-direction:column;align-items:stretch;gap:8px}
+  .btn-sell{justify-content:center}
+  .panel-foot.wrap .btn{min-width:0;flex:1}
+  .panel-foot.wrap #btn-next-wave{flex:1 1 100%}
+  .combo-row{padding:8px 10px}
+}

@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#0b0e17">
+<title>Арена Древних</title>
+
+<link rel="stylesheet" href="css/base.css">
+<link rel="stylesheet" href="css/screens.css">
+<link rel="stylesheet" href="css/battle.css">
+<link rel="stylesheet" href="css/panels.css">
+</head>
+<body>
+
+<div id="app">
+
+  <!-- ======================= ЗАГРУЗКА ======================= -->
+  <div id="scr-loading" class="screen active">
+    <div class="load-box">
+      <div class="load-logo">АРЕНА<span>ДРЕВНИХ</span></div>
+      <div class="load-bar"><i id="load-fill"></i></div>
+      <div class="load-hint" id="load-hint">Загрузка...</div>
+    </div>
+  </div>
+
+  <!-- ======================= МЕНЮ ======================= -->
+  <div id="scr-menu" class="screen">
+    <div class="menu-bg"></div>
+    <div class="topbar">
+      <div class="cur"><span class="ic ic-soul"></span><b id="hud-souls">0</b></div>
+      <div id="dev-badge" class="dev-badge" style="display:none">ОТЛАДКА</div>
+      <button class="icon-btn" id="btn-settings" aria-label="Настройки"><span class="ic ic-gear"></span></button>
+    </div>
+    <div class="menu-core">
+      <h1 class="game-title">АРЕНА<span>ДРЕВНИХ</span></h1>
+      <p class="game-sub">Выживи как можно больше волн</p>
+      <div class="record-line">Рекорд: <b id="hud-best">волна 0</b></div>
+      <div class="menu-btns">
+        <button class="btn btn-main" id="btn-play">В БОЙ</button>
+        <button class="btn" id="btn-heroes">ГЕРОИ</button>
+        <button class="btn" id="btn-training">УЧЕБНЫЙ ПОЛИГОН</button>
+        <button class="btn" id="btn-howto">КАК ИГРАТЬ</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======================= ГЕРОИ ======================= -->
+  <div id="scr-heroes" class="screen">
+    <div class="topbar">
+      <button class="icon-btn" data-back="menu" aria-label="Назад"><span class="ic ic-back"></span></button>
+      <div class="topbar-title">Герои</div>
+      <div class="cur"><span class="ic ic-soul"></span><b class="hud-souls">0</b></div>
+    </div>
+    <div class="hero-layout">
+      <div class="hero-list" id="hero-list"></div>
+      <div class="hero-detail" id="hero-detail"></div>
+    </div>
+  </div>
+
+  <!-- ======================= БОЙ ======================= -->
+  <div id="scr-battle" class="screen">
+    <canvas id="cv"></canvas>
+
+    <div class="battle-hud">
+      <div class="bh-top">
+        <div class="bh-wave" id="bh-wave">ВОЛНА <b id="hud-wave">1</b></div>
+        <div class="bh-gold"><span class="ic ic-gold"></span><b id="hud-gold">0</b></div>
+        <div class="bh-map" id="hud-map"></div>
+        <button class="chip" id="btn-auto">АВТО: ВЫКЛ</button>
+        <button class="chip" id="btn-pause" aria-label="Пауза">II</button>
+      </div>
+
+      <div class="bh-player">
+        <div class="pp-name">
+          <b id="hud-hname">—</b>
+          <span class="lvl">ур. <b id="hud-hlvl">1</b></span>
+          <span class="pts-dot" id="hud-skillpts" style="display:none">0</span>
+        </div>
+        <div class="bar bar-hp"><i id="hud-hp"></i><span id="hud-hp-txt"></span></div>
+        <div class="bar bar-mp"><i id="hud-mp"></i><span id="hud-mp-txt"></span></div>
+        <div class="bar bar-xp"><i id="hud-xp"></i></div>
+      </div>
+
+      <div class="bh-items" id="hud-items"></div>
+
+      <div class="train-panel" id="train-panel" style="display:none">
+        <div class="tr-dps">УРОН В СЕК: <b id="hud-dps">0</b></div>
+        <div class="tr-btns">
+          <button class="chip" id="tr-mob">+ ВРАГ</button>
+          <button class="chip" id="tr-boss">+ БОСС</button>
+          <button class="chip" id="tr-clear">ОЧИСТИТЬ</button>
+          <button class="chip" id="tr-shop">ЛАВКА</button>
+          <button class="chip" id="tr-skills">УМЕНИЯ</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="mob-ctl" id="mob-ctl">
+      <div class="stick" id="stick"><i id="stick-knob"></i></div>
+    </div>
+
+    <div class="reagent-bar" id="reagent-bar" style="display:none">
+      <div class="rg-slots">
+        <div class="rg-slot"></div>
+        <div class="rg-slot"></div>
+        <div class="rg-slot"></div>
+      </div>
+      <div class="rg-name" id="rg-name">выберите 3 стихии</div>
+    </div>
+
+    <div class="skillbar" id="skillbar"></div>
+  </div>
+
+  <!-- ======================= ЛАВКА ======================= -->
+  <div id="scr-shop" class="screen overlay">
+    <div class="panel panel-wide">
+      <div class="panel-head">
+        <h2>ЛАВКА</h2>
+        <div class="cur"><span class="ic ic-gold"></span><b class="hud-gold">0</b></div>
+      </div>
+      <div class="shop-body">
+        <div class="inv-row">
+          <div class="inv-label">Инвентарь · нажмите на предмет, чтобы продать</div>
+          <div class="inv-slots" id="inv-slots"></div>
+          <div class="sell-panel" id="sell-panel" style="display:none"></div>
+        </div>
+        <div class="stat-strip" id="stat-strip"></div>
+        <div class="shop-tabs">
+          <button class="shop-tab on" data-t="0">ВСЕ</button>
+          <button class="shop-tab" data-t="1">ОБЫЧНЫЕ</button>
+          <button class="shop-tab" data-t="2">РЕДКИЕ</button>
+          <button class="shop-tab" data-t="3">ЭПИЧЕСКИЕ</button>
+          <button class="shop-tab" data-t="4">ЛЕГЕНДАРНЫЕ</button>
+        </div>
+        <div class="shop-grid" id="shop-grid"></div>
+      </div>
+      <div class="panel-foot wrap">
+        <button class="btn btn-ghost" id="btn-lvlup">УМЕНИЯ</button>
+        <button class="btn btn-ghost" id="btn-autobuy">АВТОЗАКУП</button>
+        <button class="btn btn-main" id="btn-next-wave">СЛЕДУЮЩАЯ ВОЛНА</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======================= УМЕНИЯ ======================= -->
+  <div id="scr-skills" class="screen overlay">
+    <div class="panel">
+      <div class="panel-head"><h2>УМЕНИЯ</h2><div class="pts">Очков: <b id="hud-pts">0</b></div></div>
+      <div class="skill-up-list" id="skill-up-list"></div>
+      <div class="panel-foot">
+        <button class="btn btn-ghost" id="btn-autolevel">РАСПРЕДЕЛИТЬ САМО</button>
+        <button class="btn btn-main" data-close="skills">ГОТОВО</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======================= ПАУЗА ======================= -->
+  <div id="scr-pause" class="screen overlay">
+    <div class="panel panel-sm">
+      <div class="panel-head"><h2>ПАУЗА</h2></div>
+      <div class="pause-body">
+        <label class="switch"><input type="checkbox" id="opt-sound" checked><span></span>Звук</label>
+        <label class="switch"><input type="checkbox" id="opt-shake" checked><span></span>Тряска экрана</label>
+      </div>
+      <div class="panel-foot col">
+        <button class="btn btn-main" id="btn-resume">ПРОДОЛЖИТЬ</button>
+        <button class="btn btn-ghost" id="btn-quit">СДАТЬСЯ</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======================= ПОРАЖЕНИЕ ======================= -->
+  <div id="scr-over" class="screen overlay">
+    <div class="panel panel-sm">
+      <div class="panel-head"><h2 id="over-title">ПОРАЖЕНИЕ</h2></div>
+      <div class="over-body">
+        <div class="over-wave">Дошёл до волны <b id="over-wave">1</b></div>
+        <div class="over-kills">Убито врагов: <b id="over-kills">0</b></div>
+        <div class="over-rew"><span class="ic ic-soul"></span> +<b id="over-souls">0</b> душ</div>
+      </div>
+      <div class="panel-foot col">
+        <button class="btn btn-rv" id="btn-revive"><span class="ic ic-rv"></span> ВОСКРЕСНУТЬ ЗА РЕКЛАМУ</button>
+        <button class="btn btn-rv" id="btn-x2"><span class="ic ic-rv"></span> УДВОИТЬ ДУШИ</button>
+        <button class="btn btn-main" id="btn-again">ЕЩЁ РАЗ</button>
+        <button class="btn btn-ghost" data-back="menu">В МЕНЮ</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======================= КАК ИГРАТЬ ======================= -->
+  <div id="scr-howto" class="screen overlay">
+    <div class="panel">
+      <div class="panel-head"><h2>КАК ИГРАТЬ</h2></div>
+      <div class="howto-body" id="howto-body"></div>
+      <div class="panel-foot"><button class="btn btn-main" data-close="howto">ПОНЯТНО</button></div>
+    </div>
+  </div>
+
+  <div id="toast-wrap"></div>
+</div>
+
+<!-- =========================================================
+     МАНИФЕСТ ПОДКЛЮЧЕНИЯ
+     Порядок = порядок слоёв. Файл может обращаться только
+     к слоям ниже себя, и только внутри функций.
+     ========================================================= -->
+
+<!-- core: неймспейс и утилиты -->
+<script src="js/core/ns.js"></script>
+<script src="js/core/math.js"></script>
+<script src="js/core/audio.js"></script>
+<script src="js/core/input.js"></script>
+
+<!-- platform: SDK Яндекс Игр, сейвы, язык -->
+<script src="js/platform/i18n.js"></script>
+<script src="js/platform/storage.js"></script>
+<script src="js/platform/sdk.js"></script>
+
+<!-- content: данные -->
+<script src="js/content/attributes.js"></script>
+<script src="js/content/items.js"></script>
+<script src="js/content/enemies.js"></script>
+<script src="js/content/maps.js"></script>
+<script src="js/content/runes.js"></script>
+<script src="js/content/skills/registry.js"></script>
+<script src="js/content/skills/melee.js"></script>
+<script src="js/content/skills/ranged.js"></script>
+<script src="js/content/skills/casters.js"></script>
+<script src="js/content/skills/arcanist.js"></script>
+<script src="js/content/skills/invoke.js"></script>
+<script src="js/content/heroes.js"></script>
+
+<!-- game: состояние и системы -->
+<script src="js/game/world.js"></script>
+<script src="js/game/stats.js"></script>
+<script src="js/game/buffs.js"></script>
+<script src="js/game/effects.js"></script>
+<script src="js/game/targeting.js"></script>
+<script src="js/game/combat.js"></script>
+<script src="js/game/projectiles.js"></script>
+<script src="js/game/terrain.js"></script>
+<script src="js/game/factory.js"></script>
+<script src="js/game/abilities.js"></script>
+<script src="js/game/ai.js"></script>
+<script src="js/game/waves.js"></script>
+<script src="js/game/runes.js"></script>
+<script src="js/game/api.js"></script>
+<script src="js/game/loop.js"></script>
+
+<!-- render: отрисовка -->
+<script src="js/render/canvas.js"></script>
+<script src="js/render/ground.js"></script>
+<script src="js/render/props.js"></script>
+<script src="js/render/anim.js"></script>
+<script src="js/render/shapes.js"></script>
+<script src="js/render/units.js"></script>
+<script src="js/render/fx.js"></script>
+<script src="js/render/renderer.js"></script>
+<script src="js/render/portrait.js"></script>
+
+<!-- ui: экраны -->
+<script src="js/ui/dom.js"></script>
+<script src="js/ui/toast.js"></script>
+<script src="js/ui/screens.js"></script>
+<script src="js/ui/menu.js"></script>
+<script src="js/ui/heroes.js"></script>
+<script src="js/ui/hud.js"></script>
+<script src="js/ui/skillbar.js"></script>
+<script src="js/ui/shop.js"></script>
+<script src="js/ui/skilltree.js"></script>
+<script src="js/ui/training.js"></script>
+<script src="js/ui/controls.js"></script>
+
+<!-- точка входа -->
+<script src="js/main.js"></script>
+</body>
+</html>

@@ -1,0 +1,123 @@
+/* ============================================================
+   base — переменные, сброс, типографика, кнопки, иконки, тосты.
+   Подключается первым, остальные файлы опираются на эти токены.
+   ============================================================ */
+
+:root{
+  /* поверхности */
+  --bg:#0b0e17; --bg2:#131829; --panel:#171d31; --panel2:#1e2540; --line:#2b3556;
+  /* текст */
+  --txt:#e6ecff; --dim:#8b97bd;
+  /* смыслы */
+  --gold:#ffc043; --hp:#3ddb7f; --mp:#4aa8ff; --xp:#b07dff;
+  --red:#ff4d5e; --acc:#ff7a2f; --ok:#3ddb7f;
+  /* геометрия */
+  --r:14px;
+}
+
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+
+html,body{
+  width:100%;height:100%;overflow:hidden;
+  overscroll-behavior:none;touch-action:none;   /* п.1.10.2 — без прокрутки и swipe-to-refresh */
+}
+
+body{
+  background:var(--bg);color:var(--txt);
+  font:500 15px/1.4 "Trebuchet MS","Segoe UI",system-ui,sans-serif;
+  user-select:none;-webkit-user-select:none;
+}
+
+#app{position:fixed;inset:0;overflow:hidden}
+button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
+
+/* ---------------- каркас экранов ---------------- */
+.screen{position:absolute;inset:0;display:none;flex-direction:column}
+.screen.active{display:flex}
+.screen.overlay{
+  background:rgba(6,9,18,.82);backdrop-filter:blur(6px);
+  align-items:center;justify-content:center;padding:14px;z-index:40;
+}
+
+/* ---------------- кнопки ---------------- */
+.btn{
+  padding:13px 18px;border-radius:12px;background:var(--panel2);border:1px solid var(--line);
+  font-weight:800;letter-spacing:1px;font-size:15px;transition:transform .08s,filter .15s;
+}
+.btn:active{transform:scale(.97)}
+.btn:disabled{opacity:.4;cursor:default}
+
+.btn-main{
+  background:linear-gradient(180deg,#ff8a3d,#e8571a);border-color:#ff9a55;color:#fff;
+  box-shadow:0 6px 18px rgba(232,87,26,.32);
+}
+.btn-ghost{background:transparent;color:var(--dim)}
+.btn-rv{
+  background:linear-gradient(180deg,#2f7ddb,#1c53a0);border-color:#4a97ee;color:#fff;
+  display:flex;align-items:center;justify-content:center;gap:8px;
+}
+
+.chip{
+  padding:6px 11px;border-radius:9px;background:rgba(0,0,0,.42);border:1px solid var(--line);
+  font-size:12px;font-weight:800;letter-spacing:.5px;
+}
+.chip.on{
+  background:linear-gradient(180deg,#3ddb7f,#22a75c);border-color:#5cf0a0;color:#052b17;
+}
+
+.icon-btn{
+  width:38px;height:38px;border-radius:11px;background:rgba(255,255,255,.06);
+  border:1px solid var(--line);display:flex;align-items:center;justify-content:center;
+}
+.icon-btn:active{transform:scale(.94)}
+
+/* ---------------- верхняя панель ---------------- */
+.topbar{
+  position:relative;z-index:3;display:flex;align-items:center;gap:10px;
+  padding:10px 14px;padding-top:calc(10px + env(safe-area-inset-top));
+}
+.topbar-title{font-weight:800;letter-spacing:1px;font-size:17px}
+.topbar .cur{margin-left:auto}
+
+.cur{
+  display:flex;align-items:center;gap:6px;background:rgba(0,0,0,.35);
+  border:1px solid var(--line);border-radius:999px;padding:5px 13px 5px 9px;font-weight:800;
+}
+
+.dev-badge{
+  padding:4px 10px;border-radius:7px;background:rgba(255,77,94,.18);
+  border:1px solid var(--red);color:var(--red);
+  font-size:10px;font-weight:900;letter-spacing:1px;
+}
+
+/* ---------------- иконки: инлайновые SVG-маски, без файлов ---------------- */
+:root{
+  --m-soul:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%23fff' d='M12 2c3 4 6 6 6 10a6 6 0 1 1-12 0c0-4 3-6 6-10z'/%3E%3C/svg%3E");
+  --m-gold:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Ccircle cx='12' cy='12' r='9' fill='%23fff'/%3E%3C/svg%3E");
+  --m-gear:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%23fff' d='M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8zm9 4l-2-1.2.4-2.3-2.2-1.3-1.7 1.6-2.2-.8L12 3h-2.6l-1.1 2.2-2.2.8L4.4 4.4 2.2 5.7l.4 2.3L1 9.6v2.8l1.6 1.2-.4 2.3 2.2 1.3 1.7-1.6 2.2.8L9.4 21H12l1.1-2.2 2.2-.8 1.7 1.6 2.2-1.3-.4-2.3z'/%3E%3C/svg%3E");
+  --m-back:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%23fff' d='M15 4l-8 8 8 8 2-2-6-6 6-6z'/%3E%3C/svg%3E");
+  --m-rv:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%23fff' d='M4 4h16v16H4z' opacity='.3'/%3E%3Cpath fill='%23fff' d='M9 7l9 5-9 5z'/%3E%3C/svg%3E");
+}
+
+.ic{
+  display:inline-block;width:16px;height:16px;flex:none;background:currentColor;
+  -webkit-mask-repeat:no-repeat;mask-repeat:no-repeat;
+  -webkit-mask-size:contain;mask-size:contain;
+  -webkit-mask-position:center;mask-position:center;
+}
+.ic-soul{color:#b07dff;-webkit-mask-image:var(--m-soul);mask-image:var(--m-soul)}
+.ic-gold{color:var(--gold);-webkit-mask-image:var(--m-gold);mask-image:var(--m-gold)}
+.ic-gear{-webkit-mask-image:var(--m-gear);mask-image:var(--m-gear)}
+.ic-back{-webkit-mask-image:var(--m-back);mask-image:var(--m-back)}
+.ic-rv{-webkit-mask-image:var(--m-rv);mask-image:var(--m-rv)}
+
+/* ---------------- тосты ---------------- */
+#toast-wrap{
+  position:absolute;top:calc(70px + env(safe-area-inset-top));left:0;right:0;z-index:60;
+  display:flex;flex-direction:column;align-items:center;gap:6px;pointer-events:none;
+}
+.toast{
+  background:rgba(10,14,26,.94);border:1px solid var(--line);border-radius:10px;
+  padding:8px 15px;font-size:13px;font-weight:700;animation:toast-in .25s ease-out;
+}
+@keyframes toast-in{from{opacity:0;transform:translateY(-10px)}}
