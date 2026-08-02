@@ -65,6 +65,15 @@ AA.module('game/combat', (function () {
       if (!tiny) fx.floatText(src.x, src.y - src.r - 14, '+' + Math.round(hl), '#3ddb7f', 12);
     }
 
+    // отражение (Зеркальный Страж): часть урона возвращается бьющему
+    var refl = B().get(tgt, 'reflect');
+    if (refl && refl.reflect && src && src !== tgt && !src._reflecting) {
+      src._reflecting = true;
+      damage(tgt, src, dmg * refl.reflect, 'magic');
+      src._reflecting = false;
+      if (!tiny) fx.sparks(tgt.x, tgt.y, '#9adcff', 6);
+    }
+
     if (tgt.hp <= 0) kill(src, tgt);
     return dmg;
   }

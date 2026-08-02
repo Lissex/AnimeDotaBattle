@@ -30,17 +30,18 @@ AA.module('game/waves', (function () {
     var w = W(), E = AA.Content.enemies, A = AA.Content.attributes;
     var wave = w.wave;
 
-    if (wave % 5 === 0) {
+    if (A.isBossWave(wave)) {
       /* --- босс --- */
       var bossDef = E.bossFor(wave);
-      var count = 1 + Math.floor(wave / 15);
+      var count = 1 + Math.floor(A.bossIndex(wave) / 5);   // с 50-й волны их двое
       for (var i = 0; i < count; i++) spawn(bossDef, true);
 
-      var escort = Math.min(5, 2 + Math.floor(wave / 6));
+      var escort = Math.min(6, 2 + Math.floor(wave / 10));
       for (var k = 0; k < escort; k++) spawn(E.roll(wave), false);
 
       AA.Game.effects.flash('#ff4d5e', .3);
       AA.Game.effects.shake(11);
+      if (AA.UI.hud.announceBoss) AA.UI.hud.announceBoss(bossDef);
     } else {
       /* --- обычная волна --- */
       var budget = A.enemyCount(wave), guard = 0;
@@ -60,12 +61,40 @@ AA.module('game/waves', (function () {
   }
 
   function nextWave() {
-    var w = W(), h = w.hero;
+    var w = W(), h = w.hero, A = AA.Content.attributes;
+
+    // босса добили — уходим на следующую арену
+    var wasBoss = A.isBossWave(w.wave);
+
     w.wave++;
     w.running = true; w.paused = false;
     h.hp = Math.min(h.maxHp, h.hp + h.maxHp * .35);
     h.mp = h.maxMp;
+
+    if (wasBoss) changeMap(AA.Content.maps.next(w.mapId));
     spawnWave();
+  }
+
+  /** Перестроить арену на лету: ландшафт, фон, погода, позиция героя. */
+  function changeMap(mapId) {
+    var w = W();
+    AA.Game.terrain.build(mapId);
+    AA.Render.ground.rebuild();
+    AA.Render.fx.resetWeather();
+
+    var c = AA.Game.world.center();
+    if (w.hero) {
+      w.hero.x = c.x; w.hero.y = c.y;
+      AA.Game.world.confine(w.hero);
+      AA.Game.terrain.collide(w.hero);
+    }
+    // зоны и снаряды со старой арены больше не действуют
+    ['proj', 'zones', 'walls', 'tele', 'runes'].forEach(function (k) { w[k].length = 0; });
+
+    AA.Game.effects.flash(w.map.accent, .35);
+    AA.Game.effects.ring(c.x, c.y, 340, w.map.accent);
+    AA.Game.effects.shake(8);
+    AA.UI.toast.show('Новая арена: ' + w.map.name);
   }
 
   /* ================= учебный полигон ================= */
@@ -98,7 +127,7 @@ AA.module('game/waves', (function () {
   }
 
   return {
-    spawnWave: spawnWave, nextWave: nextWave, placeAtEdge: placeAtEdge,
+    spawnWave: spawnWave, nextWave: nextWave, changeMap: changeMap, placeAtEdge: placeAtEdge,
     setupTraining: setupTraining, trainingSpawn: trainingSpawn, trainingClear: trainingClear
   };
 })());

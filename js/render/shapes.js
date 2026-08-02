@@ -124,8 +124,9 @@ AA.module('render/shapes', (function () {
 
     var bulk = kit.bulk;
 
-    /* --- 1. плащ за спиной --- */
+    /* --- 1. плащ и снаряжение за спиной --- */
     if (kit.cape) cape(ctx, s, bulk, tint(kit.cloth), t, moving);
+    backGear(ctx, s, bulk, kit, tint, t);
 
     /* --- 2. дальняя нога и рука --- */
     leg(ctx, s, -2.2 * s, -walk * 5 * s, tint(kit.cloth), .75);
@@ -137,8 +138,9 @@ AA.module('render/shapes', (function () {
     /* --- 4. корпус --- */
     torso(ctx, s, bulk, kit, tint, u);
 
-    /* --- 5. наплечники --- */
+    /* --- 5. наплечники и снаряжение на поясе --- */
     pauldrons(ctx, s, bulk, kit, tint);
+    beltGear(ctx, s, bulk, kit, tint, t);
 
     /* --- 6. голова --- */
     ctx.save();
@@ -311,6 +313,139 @@ AA.module('render/shapes', (function () {
         ctx.fillStyle = 'rgba(150,20,20,.55)';
         ctx.beginPath(); ctx.ellipse(-2 * s, 2 * s, 3 * s, 2 * s, .3, 0, 6.2832); ctx.fill();
         ctx.beginPath(); ctx.ellipse(3 * s, 7 * s, 2 * s, 1.4 * s, -.4, 0, 6.2832); ctx.fill();
+        break;
+    }
+  }
+
+  /* ---------------- снаряжение за спиной ---------------- */
+  // Рисуется до корпуса, поэтому выглядывает из-за плеч.
+  function backGear(ctx, s, bulk, kit, tint, t) {
+    var i;
+    switch (kit.weapon) {
+      case 'bow':                                     // колчан со стрелами
+      case 'bow_leaf':
+        ctx.fillStyle = shadeColor(kit.cloth, .7);
+        ctx.save();
+        ctx.translate(-6 * s, -4 * s);
+        ctx.rotate(-.45);
+        ctx.fillRect(-3 * s, -6 * s, 6 * s, 15 * s);
+        ctx.strokeStyle = kit.trim; ctx.lineWidth = 1.4;
+        ctx.strokeRect(-3 * s, -6 * s, 6 * s, 15 * s);
+        for (i = -1; i <= 1; i++) {                   // оперение
+          ctx.strokeStyle = '#e8e0d0'; ctx.lineWidth = 1.6 * s;
+          ctx.beginPath();
+          ctx.moveTo(i * 1.8 * s, -6 * s);
+          ctx.lineTo(i * 1.8 * s, -11 * s);
+          ctx.stroke();
+        }
+        ctx.restore();
+        break;
+
+      case 'sword':                                   // щит за спиной
+        ctx.fillStyle = shadeColor(kit.armor, .75);
+        ctx.beginPath();
+        ctx.moveTo(-11 * s, -12 * s);
+        ctx.lineTo(-2 * s, -13 * s);
+        ctx.lineTo(-2 * s, 2 * s);
+        ctx.lineTo(-11 * s, -1 * s);
+        ctx.closePath();
+        ctx.fill();
+        outline(ctx, 1.4);
+        ctx.fillStyle = kit.trim;
+        ctx.fillRect(-8 * s, -9 * s, 3 * s, 8 * s);
+        break;
+
+      case 'staff_orb':                               // парящий фолиант
+        var lift = Math.sin(t * 2) * 1.5 * s;
+        ctx.fillStyle = shadeColor(kit.cloth, 1.3);
+        ctx.fillRect(-13 * s, -12 * s + lift, 7 * s, 9 * s);
+        ctx.fillStyle = kit.trim;
+        ctx.fillRect(-13 * s, -12 * s + lift, 1.6 * s, 9 * s);
+        ctx.strokeStyle = 'rgba(0,0,0,.4)'; ctx.lineWidth = 1.2;
+        ctx.strokeRect(-13 * s, -12 * s + lift, 7 * s, 9 * s);
+        break;
+
+      case 'greataxe':                                // шкура и рог за спиной
+        ctx.fillStyle = '#d8c8a8';
+        ctx.beginPath();
+        ctx.ellipse(-9 * s, -6 * s, 4 * s, 6 * s, .4, 0, 6.2832);
+        ctx.fill();
+        break;
+
+      case 'daggers':                                 // ножны с запасными клинками
+        ctx.strokeStyle = shadeColor(kit.cloth, 1.4);
+        ctx.lineWidth = 2.4 * s;
+        ctx.beginPath();
+        ctx.moveTo(-10 * s, -11 * s); ctx.lineTo(-4 * s, -2 * s);
+        ctx.moveTo(-4 * s, -12 * s); ctx.lineTo(-10 * s, -3 * s);
+        ctx.stroke();
+        break;
+    }
+  }
+
+  /* ---------------- снаряжение на поясе ---------------- */
+  function beltGear(ctx, s, bulk, kit, tint, t) {
+    var i;
+    switch (kit.torso) {
+      case 'apron':                                   // крюки и связка ключей мясника
+        ctx.strokeStyle = '#b0a898'; ctx.lineWidth = 1.6 * s;
+        for (i = -1; i <= 1; i += 2) {
+          ctx.beginPath();
+          ctx.arc(i * 5 * s, 6 * s, 2.2 * s, -.6, 2.4);
+          ctx.stroke();
+        }
+        break;
+
+      case 'fur':                                     // черепа на поясе
+        ctx.fillStyle = '#d8d0c0';
+        for (i = -1; i <= 1; i++) {
+          ctx.beginPath();
+          ctx.arc(i * 4.6 * s, 5.5 * s, 1.9 * s, 0, 6.2832);
+          ctx.fill();
+          ctx.fillStyle = 'rgba(20,16,12,.7)';
+          ctx.fillRect(i * 4.6 * s - 1.2 * s, 5.2 * s, 2.4 * s, .9 * s);
+          ctx.fillStyle = '#d8d0c0';
+        }
+        break;
+
+      case 'robe':                                    // пояс с флаконами
+        ctx.fillStyle = kit.trim;
+        for (i = -1; i <= 1; i += 2) {
+          ctx.beginPath();
+          ctx.ellipse(i * 5.4 * s, 4.5 * s, 1.5 * s, 2.2 * s, 0, 0, 6.2832);
+          ctx.fill();
+        }
+        break;
+
+      case 'leather':                                 // подсумки
+        ctx.fillStyle = shadeColor(kit.cloth, .7);
+        ctx.fillRect(-7 * s, 3.4 * s, 4 * s, 4 * s);
+        ctx.fillRect(3 * s, 3.4 * s, 3.4 * s, 3.4 * s);
+        ctx.strokeStyle = kit.trim; ctx.lineWidth = 1;
+        ctx.strokeRect(-7 * s, 3.4 * s, 4 * s, 4 * s);
+        break;
+
+      case 'plate':                                   // накидка с гербом
+        ctx.fillStyle = tint(kit.cloth);
+        ctx.beginPath();
+        ctx.moveTo(-4.5 * s, 2 * s);
+        ctx.lineTo(4.5 * s, 2 * s);
+        ctx.lineTo(3.5 * s, 13 * s);
+        ctx.lineTo(0, 11 * s);
+        ctx.lineTo(-3.5 * s, 13 * s);
+        ctx.closePath();
+        ctx.fill();
+        outline(ctx, 1.2);
+        break;
+
+      case 'stone':                                   // светящееся ядро
+        var pulse = .6 + Math.sin(t * 2.5) * .35;
+        ctx.shadowColor = kit.trim;
+        ctx.shadowBlur = 16 * pulse;
+        ctx.fillStyle = kit.trim;
+        ctx.globalAlpha = pulse;
+        ctx.beginPath(); ctx.arc(0, -2 * s, 2.6 * s, 0, 6.2832); ctx.fill();
+        ctx.globalAlpha = 1; ctx.shadowBlur = 0;
         break;
     }
   }
@@ -900,6 +1035,12 @@ AA.module('render/shapes', (function () {
       case 'e_boss_maw': bossMaw(ctx, u, c1, c2, glow, t); break;
       case 'e_boss_void': bossVoid(ctx, u, c1, c2, glow, t); break;
       case 'e_boss_forge': bossForge(ctx, u, c1, c2, glow, t); break;
+      case 'e_boss_chrono': bossChrono(ctx, u, c1, c2, glow, t); break;
+      case 'e_boss_brood': bossBrood(ctx, u, c1, c2, glow, t); break;
+      case 'e_boss_mirror': bossMirror(ctx, u, c1, c2, glow, t); break;
+      case 'e_boss_storm': bossStorm(ctx, u, c1, c2, glow, t); break;
+      case 'e_boss_plague': bossPlague(ctx, u, c1, c2, glow, t); break;
+      case 'e_boss_wrath': bossWrath(ctx, u, c1, c2, glow, t); break;
       default: bossBone(ctx, u, c1, c2, glow, t);
     }
     ctx.restore();
@@ -1190,6 +1331,402 @@ AA.module('render/shapes', (function () {
     ctx.fillRect(r * 2.16, -r * .5, r * .43, r * .18);
     ctx.globalAlpha = 1;
     ctx.restore();
+  }
+
+  /** Хронарх: песочные часы в кольце шестерён. */
+  function bossChrono(ctx, u, c1, c2, glow, t) {
+    var r = u.r, i, a;
+
+    // шестерёнчатые кольца
+    for (i = 0; i < 2; i++) {
+      ctx.save();
+      ctx.rotate(t * (i ? -.5 : .8));
+      ctx.strokeStyle = c1;
+      ctx.lineWidth = r * .1;
+      ctx.globalAlpha = .75;
+      var rr = r * (1.25 + i * .35);
+      ctx.beginPath(); ctx.arc(0, 0, rr, 0, 6.2832); ctx.stroke();
+      ctx.fillStyle = c1;
+      for (a = 0; a < 12; a++) {
+        var ga = a / 12 * 6.2832;
+        ctx.save();
+        ctx.translate(Math.cos(ga) * rr, Math.sin(ga) * rr);
+        ctx.rotate(ga);
+        ctx.fillRect(-r * .06, -r * .1, r * .12, r * .2);
+        ctx.restore();
+      }
+      ctx.restore();
+    }
+    ctx.globalAlpha = 1;
+
+    // мантия
+    ctx.fillStyle = c2;
+    ctx.beginPath();
+    ctx.moveTo(-r * .7, -r * .55);
+    ctx.quadraticCurveTo(-r * 1.05, r * .7, -r * .35, r * 1.25);
+    ctx.lineTo(r * .35, r * 1.25);
+    ctx.quadraticCurveTo(r * 1.05, r * .7, r * .7, -r * .55);
+    ctx.closePath();
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(0,0,0,.5)'; ctx.lineWidth = 2; ctx.stroke();
+
+    // песочные часы вместо груди
+    var sand = (Math.sin(t * .8) * .5 + .5);
+    ctx.shadowColor = glow; ctx.shadowBlur = 18;
+    ctx.fillStyle = glow;
+    ctx.beginPath();
+    ctx.moveTo(-r * .34, -r * .55); ctx.lineTo(r * .34, -r * .55);
+    ctx.lineTo(0, 0); ctx.closePath(); ctx.fill();
+    ctx.globalAlpha = .55 + sand * .45;
+    ctx.beginPath();
+    ctx.moveTo(-r * .34, r * .55); ctx.lineTo(r * .34, r * .55);
+    ctx.lineTo(0, 0); ctx.closePath(); ctx.fill();
+    ctx.globalAlpha = 1; ctx.shadowBlur = 0;
+
+    // капюшон с пустотой внутри
+    ctx.fillStyle = c2;
+    ctx.beginPath();
+    ctx.moveTo(-r * .5, -r * .6);
+    ctx.quadraticCurveTo(0, -r * 1.5, r * .5, -r * .6);
+    ctx.closePath(); ctx.fill();
+    ctx.fillStyle = '#050a0c';
+    ctx.beginPath(); ctx.ellipse(0, -r * .82, r * .3, r * .26, 0, 0, 6.2832); ctx.fill();
+    ctx.fillStyle = glow;
+    ctx.beginPath(); ctx.arc(-r * .1, -r * .84, r * .06, 0, 6.2832); ctx.fill();
+    ctx.beginPath(); ctx.arc(r * .1, -r * .84, r * .06, 0, 6.2832); ctx.fill();
+  }
+
+  /** Роевая Матка: раздутое брюхо с кладкой и паучьи лапы. */
+  function bossBrood(ctx, u, c1, c2, glow, t) {
+    var r = u.r, i, a;
+
+    // лапы
+    ctx.strokeStyle = c2; ctx.lineWidth = r * .13; ctx.lineCap = 'round';
+    for (i = 0; i < 6; i++) {
+      a = (i < 3 ? -1 : 1) * (.5 + (i % 3) * .45);
+      var wig = Math.sin(t * 4 + i) * r * .12;
+      ctx.beginPath();
+      ctx.moveTo(Math.cos(a) * r * .5, Math.sin(a) * r * .4);
+      ctx.quadraticCurveTo(
+        Math.cos(a) * r * 1.4, Math.sin(a) * r * 1.1 + wig,
+        Math.cos(a) * r * 1.15, Math.sin(a) * r * 1.7 + wig
+      );
+      ctx.stroke();
+    }
+
+    // брюхо
+    var g = ctx.createRadialGradient(-r * .2, -r * .2, r * .1, 0, r * .2, r * 1.25);
+    g.addColorStop(0, c1);
+    g.addColorStop(1, c2);
+    ctx.fillStyle = g;
+    ctx.beginPath();
+    ctx.ellipse(-r * .15, r * .15, r * 1.15, r * .95, 0, 0, 6.2832);
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(0,0,0,.55)'; ctx.lineWidth = 2; ctx.stroke();
+
+    // кладка яиц
+    ctx.fillStyle = glow;
+    ctx.globalAlpha = .55 + Math.sin(t * 2) * .2;
+    for (i = 0; i < 5; i++) {
+      a = i / 5 * 6.2832 + t * .3;
+      ctx.beginPath();
+      ctx.ellipse(-r * .15 + Math.cos(a) * r * .55, r * .15 + Math.sin(a) * r * .45,
+        r * .16, r * .2, a, 0, 6.2832);
+      ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+
+    // головогрудь
+    ctx.fillStyle = c2;
+    ctx.beginPath();
+    ctx.ellipse(r * .8, -r * .35, r * .55, r * .45, -.3, 0, 6.2832);
+    ctx.fill();
+    // жвалы
+    ctx.strokeStyle = c1; ctx.lineWidth = r * .1;
+    for (i = -1; i <= 1; i += 2) {
+      ctx.beginPath();
+      ctx.moveTo(r * 1.15, -r * .35 + i * r * .18);
+      ctx.lineTo(r * 1.6, -r * .35 + i * r * .38);
+      ctx.stroke();
+    }
+    // глаза кучкой
+    ctx.fillStyle = glow;
+    ctx.shadowColor = glow; ctx.shadowBlur = 10;
+    for (i = 0; i < 4; i++) {
+      ctx.beginPath();
+      ctx.arc(r * (.72 + (i % 2) * .2), -r * (.5 - Math.floor(i / 2) * .22), r * .07, 0, 6.2832);
+      ctx.fill();
+    }
+    ctx.shadowBlur = 0;
+  }
+
+  /** Зеркальный Страж: рыцарь, собранный из зеркальных осколков. */
+  function bossMirror(ctx, u, c1, c2, glow, t) {
+    var r = u.r, i, a;
+
+    // парящие осколки вокруг
+    ctx.fillStyle = c1;
+    ctx.globalAlpha = .6;
+    for (i = 0; i < 7; i++) {
+      a = i / 7 * 6.2832 + t * .6;
+      var d = r * (1.35 + Math.sin(t * 2 + i) * .12);
+      ctx.save();
+      ctx.translate(Math.cos(a) * d, Math.sin(a) * d * .7);
+      ctx.rotate(a + t);
+      ctx.beginPath();
+      ctx.moveTo(0, -r * .22); ctx.lineTo(r * .13, 0);
+      ctx.lineTo(0, r * .22); ctx.lineTo(-r * .13, 0);
+      ctx.closePath(); ctx.fill();
+      ctx.restore();
+    }
+    ctx.globalAlpha = 1;
+
+    // корпус — гранёная броня
+    ctx.fillStyle = c2;
+    ctx.beginPath();
+    ctx.moveTo(-r * .85, -r * .45);
+    ctx.lineTo(-r * .45, -r * 1.0);
+    ctx.lineTo(r * .45, -r * 1.0);
+    ctx.lineTo(r * .85, -r * .45);
+    ctx.lineTo(r * .6, r * 1.05);
+    ctx.lineTo(-r * .6, r * 1.05);
+    ctx.closePath(); ctx.fill();
+
+    var g = ctx.createLinearGradient(-r, -r, r, r);
+    g.addColorStop(0, '#ffffff');
+    g.addColorStop(.4, c1);
+    g.addColorStop(1, c2);
+    ctx.fillStyle = g;
+    ctx.beginPath();
+    ctx.moveTo(-r * .62, -r * .4);
+    ctx.lineTo(0, -r * .85);
+    ctx.lineTo(r * .62, -r * .4);
+    ctx.lineTo(r * .4, r * .8);
+    ctx.lineTo(-r * .4, r * .8);
+    ctx.closePath(); ctx.fill();
+    ctx.strokeStyle = 'rgba(0,0,0,.45)'; ctx.lineWidth = 1.6; ctx.stroke();
+
+    // отражающая грань
+    ctx.strokeStyle = '#ffffff';
+    ctx.globalAlpha = .5 + Math.sin(t * 3) * .3;
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(-r * .3, -r * .6); ctx.lineTo(r * .2, r * .5);
+    ctx.stroke();
+    ctx.globalAlpha = 1;
+
+    // шлем-призма
+    ctx.fillStyle = c1;
+    ctx.beginPath();
+    ctx.moveTo(0, -r * 1.6);
+    ctx.lineTo(r * .42, -r * 1.05);
+    ctx.lineTo(0, -r * .85);
+    ctx.lineTo(-r * .42, -r * 1.05);
+    ctx.closePath(); ctx.fill();
+    ctx.strokeStyle = 'rgba(0,0,0,.4)'; ctx.lineWidth = 1.4; ctx.stroke();
+    ctx.fillStyle = glow;
+    ctx.shadowColor = glow; ctx.shadowBlur = 14;
+    ctx.fillRect(-r * .26, -r * 1.14, r * .52, r * .1);
+    ctx.shadowBlur = 0;
+  }
+
+  /** Громовой Титан: между поднятыми руками бьёт дуга. */
+  function bossStorm(ctx, u, c1, c2, glow, t) {
+    var r = u.r, i;
+
+    // ноги-опоры
+    ctx.fillStyle = c2;
+    ctx.fillRect(-r * .55, r * .4, r * .38, r * 1.05);
+    ctx.fillRect(r * .17, r * .4, r * .38, r * 1.05);
+
+    // торс
+    var g = ctx.createLinearGradient(0, -r, 0, r);
+    g.addColorStop(0, c1);
+    g.addColorStop(1, c2);
+    ctx.fillStyle = g;
+    ctx.beginPath();
+    ctx.moveTo(-r * .8, -r * .7);
+    ctx.lineTo(r * .8, -r * .7);
+    ctx.lineTo(r * .6, r * .55);
+    ctx.lineTo(-r * .6, r * .55);
+    ctx.closePath(); ctx.fill();
+    ctx.strokeStyle = 'rgba(0,0,0,.5)'; ctx.lineWidth = 2; ctx.stroke();
+
+    // поднятые руки
+    ctx.strokeStyle = c1; ctx.lineWidth = r * .2; ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.moveTo(-r * .7, -r * .55); ctx.lineTo(-r * 1.25, -r * 1.35);
+    ctx.moveTo(r * .7, -r * .55); ctx.lineTo(r * 1.25, -r * 1.35);
+    ctx.stroke();
+
+    // дуга между ладонями
+    ctx.strokeStyle = glow;
+    ctx.shadowColor = glow; ctx.shadowBlur = 22;
+    ctx.lineWidth = 2.5;
+    ctx.beginPath();
+    ctx.moveTo(-r * 1.25, -r * 1.35);
+    for (i = 1; i < 6; i++) {
+      var k = i / 6;
+      ctx.lineTo(-r * 1.25 + r * 2.5 * k, -r * 1.35 - Math.sin(k * Math.PI) * r * .5 + (Math.random() - .5) * r * .18);
+    }
+    ctx.lineTo(r * 1.25, -r * 1.35);
+    ctx.stroke();
+    ctx.shadowBlur = 0;
+
+    // голова в маске грозы
+    ctx.fillStyle = c2;
+    ctx.beginPath();
+    ctx.moveTo(-r * .38, -r * .75);
+    ctx.lineTo(0, -r * 1.25);
+    ctx.lineTo(r * .38, -r * .75);
+    ctx.closePath(); ctx.fill();
+    ctx.fillStyle = glow;
+    ctx.shadowColor = glow; ctx.shadowBlur = 12;
+    ctx.fillRect(-r * .22, -r * .92, r * .44, r * .1);
+    ctx.shadowBlur = 0;
+
+    // разряды по корпусу
+    ctx.strokeStyle = glow;
+    ctx.globalAlpha = .5 + Math.sin(t * 9) * .4;
+    ctx.lineWidth = 1.6;
+    ctx.beginPath();
+    ctx.moveTo(-r * .4, -r * .4); ctx.lineTo(r * .05, 0); ctx.lineTo(-r * .25, r * .35);
+    ctx.stroke();
+    ctx.globalAlpha = 1;
+  }
+
+  /** Чумной Патриарх: раздутая фигура в балахоне с кадилом. */
+  function bossPlague(ctx, u, c1, c2, glow, t) {
+    var r = u.r, i;
+    var swell = 1 + Math.sin(t * 1.4) * .04;
+
+    // балахон
+    ctx.save();
+    ctx.scale(swell, 1 / swell);
+    ctx.fillStyle = c2;
+    ctx.beginPath();
+    ctx.moveTo(-r * .55, -r * .75);
+    ctx.quadraticCurveTo(-r * 1.25, r * .3, -r * .95, r * 1.25);
+    ctx.lineTo(r * .95, r * 1.25);
+    ctx.quadraticCurveTo(r * 1.25, r * .3, r * .55, -r * .75);
+    ctx.closePath(); ctx.fill();
+    ctx.strokeStyle = 'rgba(0,0,0,.5)'; ctx.lineWidth = 2; ctx.stroke();
+
+    // вздутия и язвы
+    ctx.fillStyle = c1;
+    ctx.globalAlpha = .5;
+    for (i = 0; i < 5; i++) {
+      var a = i / 5 * 6.2832;
+      ctx.beginPath();
+      ctx.arc(Math.cos(a) * r * .5, r * .25 + Math.sin(a) * r * .45, r * .2, 0, 6.2832);
+      ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+
+    // клювастая маска чумного доктора
+    ctx.fillStyle = c1;
+    ctx.beginPath();
+    ctx.ellipse(0, -r * .95, r * .42, r * .38, 0, 0, 6.2832);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.moveTo(r * .2, -r * 1.0);
+    ctx.quadraticCurveTo(r * 1.05, -r * .85, r * .25, -r * .68);
+    ctx.closePath(); ctx.fill();
+    ctx.strokeStyle = 'rgba(0,0,0,.45)'; ctx.lineWidth = 1.4; ctx.stroke();
+    ctx.fillStyle = '#0e1006';
+    ctx.beginPath(); ctx.arc(-r * .12, -r * 1.02, r * .1, 0, 6.2832); ctx.fill();
+    ctx.beginPath(); ctx.arc(r * .14, -r * 1.02, r * .1, 0, 6.2832); ctx.fill();
+    ctx.restore();
+
+    // кадило на цепи
+    var sway = Math.sin(t * 2) * r * .5;
+    ctx.strokeStyle = '#5a5a48'; ctx.lineWidth = 1.6;
+    ctx.beginPath();
+    ctx.moveTo(-r * .75, -r * .45);
+    ctx.lineTo(-r * .95 + sway, r * .35);
+    ctx.stroke();
+    ctx.fillStyle = c1;
+    ctx.beginPath(); ctx.arc(-r * .95 + sway, r * .5, r * .2, 0, 6.2832); ctx.fill();
+    ctx.shadowColor = glow; ctx.shadowBlur = 16;
+    ctx.fillStyle = glow;
+    ctx.globalAlpha = .5 + Math.sin(t * 3) * .3;
+    ctx.beginPath(); ctx.arc(-r * .95 + sway, r * .5, r * .11, 0, 6.2832); ctx.fill();
+    ctx.globalAlpha = 1; ctx.shadowBlur = 0;
+  }
+
+  /** Владыка Ярости: громила в цепях с двумя топорами. */
+  function bossWrath(ctx, u, c1, c2, glow, t) {
+    var r = u.r, i;
+    var rage = u.phase === 2 ? 1 : .4;
+
+    // ноги
+    ctx.fillStyle = c2;
+    ctx.fillRect(-r * .6, r * .35, r * .42, r * 1.0);
+    ctx.fillRect(r * .18, r * .35, r * .42, r * 1.0);
+
+    // массивный торс
+    var g = ctx.createRadialGradient(-r * .2, -r * .4, r * .1, 0, 0, r * 1.1);
+    g.addColorStop(0, c1);
+    g.addColorStop(1, c2);
+    ctx.fillStyle = g;
+    ctx.beginPath();
+    ctx.moveTo(-r * .95, -r * .55);
+    ctx.quadraticCurveTo(0, -r * .95, r * .95, -r * .55);
+    ctx.lineTo(r * .65, r * .5);
+    ctx.lineTo(-r * .65, r * .5);
+    ctx.closePath(); ctx.fill();
+    ctx.strokeStyle = 'rgba(0,0,0,.55)'; ctx.lineWidth = 2.2; ctx.stroke();
+
+    // цепи поперёк груди
+    ctx.strokeStyle = '#7a7068'; ctx.lineWidth = r * .09;
+    ctx.beginPath();
+    ctx.moveTo(-r * .7, -r * .3); ctx.quadraticCurveTo(0, r * .1, r * .7, -r * .35);
+    ctx.stroke();
+    ctx.fillStyle = '#8a8078';
+    for (i = -2; i <= 2; i++) {
+      ctx.beginPath();
+      ctx.arc(i * r * .28, -r * .2 + Math.abs(i) * r * .04, r * .06, 0, 6.2832);
+      ctx.fill();
+    }
+
+    // раскалённые швы
+    ctx.strokeStyle = glow;
+    ctx.shadowColor = glow; ctx.shadowBlur = 14 * rage;
+    ctx.globalAlpha = rage;
+    ctx.lineWidth = 2.2;
+    ctx.beginPath();
+    ctx.moveTo(-r * .5, -r * .45); ctx.lineTo(-r * .15, r * .1); ctx.lineTo(-r * .4, r * .45);
+    ctx.moveTo(r * .5, -r * .4); ctx.lineTo(r * .18, r * .15);
+    ctx.stroke();
+    ctx.globalAlpha = 1; ctx.shadowBlur = 0;
+
+    // безглазая голова с оскалом
+    ctx.fillStyle = c2;
+    ctx.beginPath();
+    ctx.ellipse(0, -r * .85, r * .4, r * .34, 0, 0, 6.2832);
+    ctx.fill();
+    ctx.fillStyle = glow;
+    ctx.shadowColor = glow; ctx.shadowBlur = 12;
+    ctx.beginPath();
+    ctx.moveTo(-r * .26, -r * .9); ctx.lineTo(r * .26, -r * .9);
+    ctx.lineTo(0, -r * .74); ctx.closePath(); ctx.fill();
+    ctx.shadowBlur = 0;
+
+    // два топора
+    for (i = -1; i <= 1; i += 2) {
+      ctx.save();
+      ctx.translate(i * r * 1.1, -r * .2);
+      ctx.rotate(i * (.4 + Math.sin(t * 2 + i) * .12));
+      ctx.fillStyle = '#4a3020';
+      ctx.fillRect(-r * .06, -r * .1, r * .12, r * 1.1);
+      ctx.fillStyle = '#e8e0d8';
+      ctx.beginPath();
+      ctx.moveTo(-r * .06, r * .55);
+      ctx.quadraticCurveTo(-r * .6, r * .75, -r * .3, r * 1.1);
+      ctx.quadraticCurveTo(-r * .06, r * .9, -r * .06, r * .55);
+      ctx.fill();
+      ctx.restore();
+    }
   }
 
   return { hero: hero, enemy: enemy, KITS: KITS };

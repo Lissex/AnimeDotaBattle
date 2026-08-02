@@ -50,7 +50,55 @@ AA.module('ui/hud', (function () {
       renderItems();
     }
 
+    refreshBoss();
     AA.UI.skillbar.refresh();
+  }
+
+  /* ---------------- босс ---------------- */
+  function strongestBoss() {
+    var w = W(), best = null;
+    for (var i = 0; i < w.units.length; i++) {
+      var u = w.units[i];
+      if (u.dead || !u.isBoss) continue;
+      if (!best || u.hp > best.hp) best = u;
+    }
+    return best;
+  }
+
+  function refreshBoss() {
+    var d = D(), boss = strongestBoss(), box = d.$('boss-hud');
+    if (!boss) {
+      if (cache.bossShown) { box.style.display = 'none'; cache.bossShown = false; }
+      return;
+    }
+    if (!cache.bossShown) { box.style.display = ''; cache.bossShown = true; }
+
+    var pct = Math.max(0, Math.min(1, boss.hp / boss.maxHp));
+    d.$('boss-hp').style.transform = 'scaleX(' + pct + ')';
+
+    var label = boss.name + (boss.phase === 2 ? ' · ЯРОСТЬ' : '');
+    if (cache.bossName !== label) {
+      d.$('boss-name').textContent = label;
+      d.$('boss-name').style.color = boss.phase === 2 ? boss.glow : '';
+      cache.bossName = label;
+    }
+  }
+
+  /** Плашка с именем и замыслом босса в момент появления. */
+  function announceBoss(def) {
+    var d = D(), banner = d.$('boss-banner');
+    d.$('bb-title').textContent = def.name;
+    d.$('bb-title').style.color = def.glow;
+    d.$('bb-concept').textContent = def.concept || '';
+    banner.style.display = '';
+    banner.classList.remove('show');
+    void banner.offsetWidth;          // перезапуск анимации
+    banner.classList.add('show');
+    clearTimeout(announceBoss._t);
+    announceBoss._t = setTimeout(function () {
+      banner.classList.remove('show');
+      banner.style.display = 'none';
+    }, 4200);
   }
 
   function renderItems() {
@@ -98,5 +146,8 @@ AA.module('ui/hud', (function () {
 
   function reset() { cache = {}; }
 
-  return { refresh: refresh, renderItems: renderItems, onWaveClear: onWaveClear, reset: reset };
+  return {
+    refresh: refresh, renderItems: renderItems, onWaveClear: onWaveClear,
+    announceBoss: announceBoss, reset: reset
+  };
 })());

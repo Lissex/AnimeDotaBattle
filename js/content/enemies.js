@@ -74,6 +74,11 @@ AA.module('content/enemies', (function () {
       id: 'mirror', name: 'Отражение', shape: 'e_mirror',
       c1: '#4a6ac8', c2: '#141c3a', glow: '#8ab0ff',
       hp: 90, atk: 26, armor: 0, ms: 235, as: .7, range: 330, r: 16, magic: true
+    },
+    brood: {
+      id: 'brood', name: 'Личинка', shape: 'e_swarm',
+      c1: '#8aa81a', c2: '#2a3208', glow: '#d0ff4a',
+      hp: 65, atk: 16, armor: 0, ms: 350, as: 1.4, range: 44, r: 11
     }
   };
 
@@ -87,6 +92,7 @@ AA.module('content/enemies', (function () {
       c1: '#c8c0a8', c2: '#3a3428', glow: '#ffe8a0',
       hpMul: 5.2, atkMul: 1.9, armor: 8, ms: 195, as: .7, range: 88, r: 36,
       phaseAt: .5,
+      concept: 'Чем дольше тянется бой, тем больше костяков на арене. Наказывает за медлительность.',
       abilities: [
         { id: 'boneStorm', cd: 9 },    // круговой удар с телеграфом
         { id: 'boneSpears', cd: 7 },   // веер костяных копий
@@ -98,6 +104,7 @@ AA.module('content/enemies', (function () {
       c1: '#7a2050', c2: '#2a0a1c', glow: '#ff4a9a',
       hpMul: 6.0, atkMul: 2.0, armor: 10, ms: 185, as: .65, range: 94, r: 38,
       phaseAt: .45,
+      concept: 'Наказывает и за близость, и за побег: вплотную жрёт, на расстоянии заливает пол лужами.',
       abilities: [
         { id: 'grab', cd: 8 },         // притягивает крюком
         { id: 'devour', cd: 11 },      // кусает вплотную и лечится
@@ -109,6 +116,7 @@ AA.module('content/enemies', (function () {
       c1: '#4a6ac8', c2: '#141c3a', glow: '#8ab0ff',
       hpMul: 5.0, atkMul: 2.2, armor: 7, ms: 205, as: .8, range: 400, r: 34, magic: true,
       phaseAt: .5,
+      concept: 'Не даёт себя достать: телепортируется, прячется за копиями и бьёт по площади издалека.',
       abilities: [
         { id: 'voidMeteor', cd: 8 },   // метеор в точку игрока
         { id: 'voidRift', cd: 10 },    // разлом по линии
@@ -121,10 +129,83 @@ AA.module('content/enemies', (function () {
       c1: '#c85a20', c2: '#3a1a06', glow: '#ffa04a',
       hpMul: 6.6, atkMul: 2.1, armor: 12, ms: 180, as: .7, range: 90, r: 40,
       phaseAt: .4,
+      concept: 'Превращает арену в наковальню: безопасных мест почти не остаётся.',
       abilities: [
         { id: 'ashRings', cd: 12 },    // расходящиеся огненные кольца
         { id: 'hammerFall', cd: 9 },   // удар молотом по конусу
         { id: 'forgePillars', cd: 13 } // столбы пламени по арене
+      ]
+    },
+    {
+      id: 'b5', name: 'Хронарх', shape: 'e_boss_chrono',
+      c1: '#4ac8c0', c2: '#0e2a30', glow: '#8affe8',
+      hpMul: 5.4, atkMul: 2.0, armor: 9, ms: 210, as: .75, range: 340, r: 34, magic: true,
+      phaseAt: .5,
+      concept: 'Гонка со временем: откатывает своё здоровье, поэтому надо продавить его быстрее, чем он восстановится.',
+      abilities: [
+        { id: 'timeField', cd: 11 },   // зона замедленного времени
+        { id: 'rewind', cd: 17 },      // откат здоровья к прошлому значению
+        { id: 'hasteSelf', cd: 14 }    // ускоряет сам себя
+      ]
+    },
+    {
+      id: 'b6', name: 'Роевая Матка', shape: 'e_boss_brood',
+      c1: '#8aa81a', c2: '#2a3208', glow: '#d0ff4a',
+      hpMul: 5.0, atkMul: 1.7, armor: 6, ms: 200, as: .6, range: 76, r: 40,
+      phaseAt: .5,
+      concept: 'Прячется за собственным потомством: пока не разгребёшь рой, до неё не добраться.',
+      abilities: [
+        { id: 'spawnBrood', cd: 9 },   // выводок гнуса
+        { id: 'burrow', cd: 15 },      // зарывается и вылезает в стороне
+        { id: 'acidSpray', cd: 10 }    // конус кислоты, разъедает броню
+      ]
+    },
+    {
+      id: 'b7', name: 'Зеркальный Страж', shape: 'e_boss_mirror',
+      c1: '#c0d8e8', c2: '#1c2c3a', glow: '#9adcff',
+      hpMul: 6.2, atkMul: 1.9, armor: 14, ms: 190, as: .7, range: 84, r: 36,
+      phaseAt: .45,
+      concept: 'Наказывает за жадность: часть урона возвращается тому, кто бьёт не глядя.',
+      abilities: [
+        { id: 'reflectShield', cd: 14 },  // отражает часть урона обратно
+        { id: 'mirrorWalls', cd: 12 },    // зеркальные стены режут проход
+        { id: 'shardVolley', cd: 8 }      // веер осколков
+      ]
+    },
+    {
+      id: 'b8', name: 'Громовой Титан', shape: 'e_boss_storm',
+      c1: '#5a8ae8', c2: '#141c3a', glow: '#a0d8ff',
+      hpMul: 7.0, atkMul: 2.2, armor: 11, ms: 175, as: .65, range: 300, r: 44,
+      phaseAt: .4,
+      concept: 'Не даёт выбрать дистанцию: вблизи жжёт полем, издалека бьёт цепями молний.',
+      abilities: [
+        { id: 'staticField', cd: 13 },  // поле: чем ближе, тем больнее
+        { id: 'chainStorm', cd: 10 },   // цепные молнии по всем
+        { id: 'thunderclap', cd: 11 }   // удар с оглушением вокруг себя
+      ]
+    },
+    {
+      id: 'b9', name: 'Чумной Патриарх', shape: 'e_boss_plague',
+      c1: '#9aa82a', c2: '#2a2a10', glow: '#c8ff6a',
+      hpMul: 6.4, atkMul: 1.8, armor: 10, ms: 185, as: .6, range: 320, r: 38, magic: true,
+      phaseAt: .45,
+      concept: 'Арена постепенно становится непригодной: лужи растут, лечение слабеет. Кто медлит — задыхается.',
+      abilities: [
+        { id: 'plaguePool', cd: 9 },    // растущие лужи заразы
+        { id: 'infect', cd: 12 },       // заражение с уроном по времени
+        { id: 'miasma', cd: 16 }        // облако, режущее лечение
+      ]
+    },
+    {
+      id: 'b10', name: 'Владыка Ярости', shape: 'e_boss_wrath',
+      c1: '#d02a2a', c2: '#3a0808', glow: '#ff6a4a',
+      hpMul: 7.6, atkMul: 2.3, armor: 13, ms: 195, as: .8, range: 92, r: 42,
+      phaseAt: .55,
+      concept: 'Чем ближе к смерти, тем страшнее: не даёт ни убежать, ни отсидеться на низком здоровье.',
+      abilities: [
+        { id: 'chainPull', cd: 10 },    // цепью притягивает к себе
+        { id: 'wrathWhirl', cd: 13 },   // вращение, идущее за героем
+        { id: 'executeLeap', cd: 12 }   // прыжок-казнь по раненому
       ]
     }
   ];
@@ -146,8 +227,11 @@ AA.module('content/enemies', (function () {
     return pool[0] || LIST[0];
   }
 
+  /** Боссы идут по порядку и после десятого начинают повторяться. */
   function bossFor(wave) {
-    return BOSSES[(Math.floor(wave / 5) - 1) % BOSSES.length];
+    var idx = AA.Content.attributes.bossIndex(wave) - 1;
+    if (idx < 0) idx = 0;
+    return BOSSES[idx % BOSSES.length];
   }
 
   return {

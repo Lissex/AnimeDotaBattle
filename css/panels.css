@@ -103,6 +103,7 @@
 .su-pips{display:flex;gap:3px;margin-top:5px}
 .pip{width:15px;height:5px;border-radius:3px;background:#2a3355}
 .pip.on{background:var(--acc)}
+.su-attr{border-style:dashed;border-color:#3a4570}
 
 /* ============================ СВЯЗКИ АРКАНА ============================ */
 .combo-box{margin-top:14px;background:var(--bg2);border:1px solid var(--line);border-radius:12px;overflow:hidden}

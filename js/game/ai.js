@@ -417,6 +417,268 @@ AA.module('game/ai', (function () {
       return true;
     },
 
+    /* ---------- Хронарх: гонка со временем ---------- */
+    timeField: function (c) {
+      var u = c.u, h = c.hero;
+      FX().zone({
+        x: h.x, y: h.y, r: 200, dur: 7, src: u, color: '#8affe8',
+        onTick: function (z, dt) {
+          T().applyInCircle(u, z.x, z.y, z.r, function (e) {
+            AA.Game.buffs.add(e, { id: 'timewarp', dur: .4, msMul: .5, asMul: .5, quiet: true });
+          });
+          C().aoeAt(u, z.x, z.y, z.r, 18 * c.scale * dt, 'magic');
+        }
+      });
+      FX().ring(h.x, h.y, 200, '#8affe8');
+      return true;
+    },
+
+    /** Запоминает здоровье и через несколько секунд возвращается к нему. */
+    rewind: function (c) {
+      var u = c.u;
+      var saved = u.hp;
+      FX().ring(u.x, u.y, 180, '#8affe8');
+      FX().burst(u.x, u.y, '#8affe8', 22);
+      AA.UI.toast.show('Хронарх запоминает миг');
+      FX().timer(4.5, function () {
+        if (u.dead) return;
+        if (u.hp < saved) {
+          FX().floatText(u.x, u.y - u.r, '+' + Math.round(saved - u.hp), '#8affe8', 18);
+          u.hp = Math.min(u.maxHp, saved);
+        }
+        FX().ring(u.x, u.y, 220, '#8affe8');
+        FX().flash('#8affe8', .2);
+      });
+      return true;
+    },
+
+    hasteSelf: function (c) {
+      AA.Game.buffs.add(c.u, {
+        id: 'chrono_haste', dur: 6, msMul: 1.7, asMul: 1.9,
+        color: '#8affe8', glow: '#8affe8'
+      });
+      FX().ring(c.u.x, c.u.y, 140, '#8affe8');
+      return true;
+    },
+
+    /* ---------- Роевая Матка: прячется за потомством ---------- */
+    spawnBrood: function (c) {
+      var u = c.u, m = M();
+      var count = c.rage ? 6 : 4;
+      FX().ring(u.x, u.y, 130, '#d0ff4a');
+      for (var i = 0; i < count; i++) {
+        (function (k) {
+          FX().timer(k * .12, function () {
+            if (u.dead) return;
+            var a = m.rnd(0, 6.2832);
+            AA.Game.factory.minion('brood',
+              u.x + Math.cos(a) * 70, u.y + Math.sin(a) * 70);
+          });
+        })(i);
+      }
+      return true;
+    },
+
+    burrow: function (c) {
+      var u = c.u, m = M(), w = W();
+      FX().burst(u.x, u.y, '#d0ff4a', 28);
+      FX().ring(u.x, u.y, 120, '#d0ff4a');
+      AA.Game.buffs.add(u, { id: 'burrow', dur: 3, mr: .75, armor: 60, msMul: 1.6, color: '#d0ff4a' });
+      // вылезает подальше от героя
+      FX().timer(2.6, function () {
+        if (u.dead) return;
+        var a = m.rnd(0, 6.2832);
+        u.x = c.hero.x + Math.cos(a) * 340;
+        u.y = c.hero.y + Math.sin(a) * 340;
+        AA.Game.world.confine(u);
+        AA.Game.terrain.collide(u);
+        FX().burst(u.x, u.y, '#d0ff4a', 30);
+        FX().ring(u.x, u.y, 160, '#d0ff4a');
+        FX().shake(8);
+      });
+      return true;
+    },
+
+    acidSpray: function (c) {
+      var u = c.u, m = M(), a = m.angleTo(u, c.hero);
+      FX().cone(u, a, 380, .8, '#d0ff4a', function (e) {
+        C().damage(u, e, 90 * c.scale, 'magic');
+        AA.Game.buffs.add(e, { id: 'acid', dur: 6, armor: -10, msMul: .85, color: '#d0ff4a' });
+      });
+      FX().shake(6);
+      return true;
+    },
+
+    /* ---------- Зеркальный Страж: возвращает урон ---------- */
+    reflectShield: function (c) {
+      var u = c.u;
+      AA.Game.buffs.add(u, {
+        id: 'reflect', dur: 6, reflect: c.rage ? .55 : .4, mr: .2,
+        color: '#9adcff', glow: '#9adcff'
+      });
+      FX().ring(u.x, u.y, 150, '#9adcff');
+      AA.UI.toast.show('Зеркальный Страж отражает урон');
+      return true;
+    },
+
+    mirrorWalls: function (c) {
+      var u = c.u, m = M();
+      var base = m.angleTo(u, c.hero);
+      for (var i = 0; i < 3; i++) {
+        var a = base + (i - 1) * 1.05;
+        FX().wall(u, a, 280, 6, '#9adcff', function (e, dt) {
+          C().damage(u, e, 55 * c.scale * dt, 'magic');
+          AA.Game.buffs.add(e, { id: 'slow', dur: .5, msMul: .5, quiet: true });
+        });
+      }
+      return true;
+    },
+
+    shardVolley: function (c) {
+      var u = c.u, m = M(), base = m.angleTo(u, c.hero);
+      var n = c.rage ? 9 : 7;
+      for (var i = 0; i < n; i++) {
+        AA.Game.projectiles.spawn({
+          from: u, angle: base + (i - (n - 1) / 2) * .19,
+          speed: 780, r: 7, color: '#c0d8e8', range: 700, pierce: 1, trail: true,
+          onHit: function (t) { C().damage(u, t, 52 * c.scale, 'magic'); }
+        });
+      }
+      return true;
+    },
+
+    /* ---------- Громовой Титан: не даёт выбрать дистанцию ---------- */
+    staticField: function (c) {
+      var u = c.u;
+      AA.Game.buffs.add(u, {
+        id: 'static', dur: 8, color: '#a0d8ff', glow: '#a0d8ff',
+        onTick: function (unit, dt) {
+          var m = M();
+          FX().aura(unit, 260, 'rgba(160,216,255,.10)');
+          T().forEachEnemy(unit, 260, function (e) {
+            // чем ближе, тем больнее
+            var k = 1 - m.dist(unit, e) / 260;
+            C().damage(unit, e, 110 * c.scale * k * dt, 'magic');
+          });
+        }
+      });
+      FX().ring(u.x, u.y, 260, '#a0d8ff');
+      return true;
+    },
+
+    chainStorm: function (c) {
+      var u = c.u;
+      C().chainLightning(u, c.hero, 95 * c.scale, c.rage ? 9 : 6, .9, '#a0d8ff');
+      FX().flash('#a0d8ff', .16);
+      FX().shake(8);
+      return true;
+    },
+
+    thunderclap: function (c) {
+      var u = c.u;
+      FX().telegraph(u.x, u.y, 240, '#a0d8ff', .6, function () {
+        if (u.dead) return;
+        C().aoeAt(u, u.x, u.y, 240, 130 * c.scale, 'magic');
+        T().applyInCircle(u, u.x, u.y, 240, function (e) {
+          AA.Game.buffs.add(e, { id: 'freeze', dur: 1.1, stun: true, color: '#a0d8ff' });
+        });
+        FX().ring(u.x, u.y, 240, '#a0d8ff');
+        FX().shake(15); FX().hitstop(.06); AA.Core.audio.boom();
+      });
+      return true;
+    },
+
+    /* ---------- Чумной Патриарх: арена гниёт ---------- */
+    plaguePool: function (c) {
+      var u = c.u, m = M();
+      var count = c.rage ? 3 : 2;
+      for (var i = 0; i < count; i++) {
+        var a = m.rnd(0, 6.2832), d = m.rnd(60, 240);
+        var x = c.hero.x + Math.cos(a) * d, y = c.hero.y + Math.sin(a) * d;
+        FX().zone({
+          x: x, y: y, r: 90, dur: 14, src: u, color: '#c8ff6a', style: 'thorn',
+          onTick: function (z, dt) {
+            z.r = Math.min(190, z.r + 7 * dt);          // лужа расползается
+            C().aoeAt(u, z.x, z.y, z.r, 40 * c.scale * dt, 'magic');
+          }
+        });
+      }
+      return true;
+    },
+
+    infect: function (c) {
+      var u = c.u;
+      C().damage(u, c.hero, 60 * c.scale, 'magic');
+      AA.Game.buffs.add(c.hero, {
+        id: 'plague', dur: 9, dps: 45 * c.scale, dmgType: 'magic', src: u,
+        hpReg: -12, color: '#c8ff6a'
+      });
+      FX().burst(c.hero.x, c.hero.y, '#c8ff6a', 20);
+      AA.UI.toast.show('Вы заражены');
+      return true;
+    },
+
+    miasma: function (c) {
+      var u = c.u;
+      FX().zone({
+        x: u.x, y: u.y, r: 300, dur: 10, src: u, color: '#9aa82a',
+        onTick: function (z, dt) {
+          T().applyInCircle(u, z.x, z.y, z.r, function (e) {
+            AA.Game.buffs.add(e, { id: 'miasma', dur: .5, hpReg: -20, msMul: .85, quiet: true });
+          });
+          C().aoeAt(u, z.x, z.y, z.r, 22 * c.scale * dt, 'magic');
+        }
+      });
+      FX().ring(u.x, u.y, 300, '#9aa82a');
+      return true;
+    },
+
+    /* ---------- Владыка Ярости: не отпускает ---------- */
+    chainPull: function (c) {
+      if (c.dist < 160) return false;
+      var u = c.u;
+      AA.Game.projectiles.spawn({
+        from: u, to: c.hero, speed: 1100, r: 11, color: '#ff6a4a',
+        trail: true, homing: true,
+        onHit: function (t) {
+          C().damage(u, t, 80 * c.scale, 'phys');
+          C().pull(t, u, 80);
+          FX().shake(11); FX().hitstop(.05);
+        }
+      });
+      return true;
+    },
+
+    wrathWhirl: function (c) {
+      var u = c.u;
+      AA.Game.buffs.add(u, {
+        id: 'wrathwhirl', dur: 5, spin: true, msMul: 1.35,
+        color: '#ff6a4a', glow: '#ff6a4a',
+        onTick: function (unit, dt) {
+          FX().aura(unit, 170, 'rgba(255,106,74,.16)');
+          C().aoeAt(unit, unit.x, unit.y, 170, 150 * c.scale * dt, 'phys');
+        }
+      });
+      FX().ring(u.x, u.y, 170, '#ff6a4a');
+      return true;
+    },
+
+    executeLeap: function (c) {
+      var h = c.hero;
+      if (h.hp / h.maxHp > .5) return false;        // только по раненому
+      var u = c.u, tx = h.x, ty = h.y;
+      FX().telegraph(tx, ty, 150, '#ff6a4a', .55, function () {
+        if (u.dead) return;
+        C().leapTo(u, tx, ty, .22, function () {
+          C().aoeAt(u, u.x, u.y, 150, 260 * c.scale, 'phys');
+          FX().ring(u.x, u.y, 150, '#ff6a4a');
+          FX().burst(u.x, u.y, '#ff6a4a', 34);
+          FX().shake(18); FX().hitstop(.09); FX().flash('#ff6a4a', .22);
+        });
+      });
+      return true;
+    },
+
     forgePillars: function (c) {
       var u = c.u, m = M(), w = W();
       var count = c.rage ? 6 : 4;

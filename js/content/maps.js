@@ -93,8 +93,26 @@ AA.module('content/maps', (function () {
     }
   };
 
+  /** Порядок смены арен после каждого босса. Полигон не участвует. */
+  var ROTATION = [
+    'butcher', 'ranger', 'berserk', 'frost', 'knight',
+    'shadow', 'dryad', 'arcanist', 'pyro', 'golem'
+  ];
+
   return {
     MAPS: MAPS,
-    get: function (id) { return MAPS[id] || MAPS.butcher; }
+    ROTATION: ROTATION,
+    get: function (id) { return MAPS[id] || MAPS.butcher; },
+
+    /** Следующая арена после текущей — по кругу. */
+    next: function (id) {
+      var i = ROTATION.indexOf(id);
+      return ROTATION[(i + 1) % ROTATION.length];
+    },
+
+    indexOf: function (id) {
+      var i = ROTATION.indexOf(id);
+      return i < 0 ? 0 : i;
+    }
   };
 })());

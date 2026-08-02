@@ -50,23 +50,60 @@ AA.module('ui/skilltree', (function () {
       box.appendChild(row);
     });
 
+    box.appendChild(attributeRow(h));
     if (h.invoker) box.appendChild(comboTable());
   }
 
-  /** Раскидать очки автоматически: качаем самое отстающее умение. */
+  /* ---------------- вложение очка в атрибуты ----------------
+     На 50 уровнях очков больше, чем слотов умений, поэтому
+     излишек уходит в главный атрибут героя. */
+  function attributeRow(h) {
+    var d = D(), A = AA.Content.attributes;
+    var key = h.primary, gain = A.ATTR_PER_POINT;
+    var invested = Math.round(h.bonusAttr[key] || 0);
+
+    var row = d.el('div', 'su su-attr',
+      '<div class="sk-ic" style="background:' + A.COLOR[key] + '">★</div>' +
+      '<div class="su-info"><b>' + A.NAME[key] +
+      ' <span class="dim">вложено ' + invested + '</span></b>' +
+      '<p>Очко даёт +' + gain + ' к главному атрибуту героя. ' +
+      'Пригодится, когда все умения уже прокачаны.</p></div>');
+
+    var btn = d.el('button', 'btn btn-main', '+');
+    btn.disabled = h.pts <= 0;
+    btn.onclick = function () {
+      if (h.pts <= 0) return;
+      h.bonusAttr[key] = (h.bonusAttr[key] || 0) + gain;
+      h.pts--;
+      AA.Game.stats.recalc(h);
+      AA.Core.audio.lvl();
+      render();
+    };
+    row.appendChild(btn);
+    return row;
+  }
+
+  /** Раскидать очки автоматически: сначала умения, остаток — в атрибут. */
   function autoAssign(silent) {
     var h = W().hero, A = AA.Content.attributes;
     var spent = 0, guard = 0;
 
-    while (h.pts > 0 && guard++ < 24) {
+    while (h.pts > 0 && guard++ < 80) {
       var cap = A.skillCap(h.level), target = null, lowest = 99;
       h.skills.forEach(function (s) {
         var lv = h.skillLv[s.id] || 0;
         if (lv >= cap) return;
         if (lv < lowest) { lowest = lv; target = s; }
       });
-      if (!target) break;
-      h.skillLv[target.id] = lowest + 1;
+
+      if (target) {
+        h.skillLv[target.id] = lowest + 1;
+      } else if (cap >= A.MAX_SKILL_LV) {
+        // умения упёрлись в потолок — вкладываем в главный атрибут
+        h.bonusAttr[h.primary] = (h.bonusAttr[h.primary] || 0) + A.ATTR_PER_POINT;
+      } else {
+        break;                        // потолок пока по уровню героя, копим
+      }
       h.pts--; spent++;
     }
 
