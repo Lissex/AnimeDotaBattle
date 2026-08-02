@@ -60,6 +60,10 @@ AA.module('ui/screens', (function () {
     AA.UI.training.setVisible(!!training);
     AA.UI.hud.refresh(true);
     AA.UI.controls.setAuto(false);
+
+    // герой мог начать забег уже выше 10 уровня (постоянные улучшения
+    // или полигон на 50-м) — тогда таланты выбираются сразу
+    setTimeout(function () { AA.UI.talents.checkPending(); }, 350);
   }
 
   function endRun() {

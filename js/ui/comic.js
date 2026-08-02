@@ -106,18 +106,38 @@ AA.module('ui/comic', (function () {
     return true;
   }
 
-  /** Отложенный показ: сначала лавка, потом глава — иначе перебивают друг друга. */
+  /* ---------------- очередь показа ----------------
+     Главу нельзя показать сразу после босса: сначала может
+     всплыть выбор таланта. Поэтому глава кладётся в очередь,
+     а показывается, когда до неё дойдёт ход. Как и окно таланта,
+     она обязана продолжить цепочку после закрытия. */
+  var onDone = null;
+
   function queue(bossIndex) { pending = bossIndex; }
-  function flush() {
+
+  /**
+   * @param {function} [next] что запустить после закрытия главы
+   * @returns {boolean} true, если глава показана
+   */
+  function flush(next) {
     if (pending === null) return false;
     var idx = pending;
     pending = null;
-    return show(idx);
+    if (!show(idx)) return false;
+    onDone = next || null;
+    return true;
+  }
+
+  function close() {
+    AA.UI.screens.close('comic');
+    var next = onDone;
+    onDone = null;
+    if (next) next();
   }
 
   function bind() {
-    D().$('btn-comic-close').onclick = function () { AA.UI.screens.close('comic'); };
+    D().$('btn-comic-close').onclick = close;
   }
 
-  return { show: show, queue: queue, flush: flush, bind: bind, paint: paint };
+  return { show: show, queue: queue, flush: flush, close: close, bind: bind, paint: paint };
 })());

@@ -156,21 +156,25 @@ AA.module('ui/hud', (function () {
     var A = AA.Content.attributes;
     if (A.isBossWave(wave)) AA.UI.comic.queue(A.bossIndex(wave));
 
-    var go = function () {
-      // сначала талант, если дорос, затем комикс, затем лавка
-      if (AA.UI.talents.checkPending()) return;
-      if (AA.UI.comic.flush()) return;
-      AA.UI.shop.open();
-    };
     // п.4.4: полноэкранная реклама только в логической паузе
-    if (wave >= 2 && wave % 3 === 0) AA.Platform.sdk.interstitial(go);
-    else go();
+    if (wave >= 2 && wave % 3 === 0) AA.Platform.sdk.interstitial(afterWave);
+    else afterWave();
+  }
+
+  /* ---------------- очередь окон между волнами ----------------
+     Порядок: талант → глава истории → лавка.
+     Каждое окно получает продолжение и обязано его вызвать при
+     закрытии — иначе бой останется остановленным и игра встанет. */
+  function afterWave() {
+    if (AA.UI.talents.checkPending(afterWave)) return;
+    if (AA.UI.comic.flush(afterWave)) return;
+    AA.UI.shop.open();
   }
 
   function reset() { cache = {}; }
 
   return {
     refresh: refresh, renderItems: renderItems, onWaveClear: onWaveClear,
-    announceBoss: announceBoss, reset: reset
+    afterWave: afterWave, announceBoss: announceBoss, reset: reset
   };
 })());
