@@ -145,6 +145,7 @@ AA.module('game/combat', (function () {
     SFX().die();
 
     if (tgt.role === 'bomber' && tgt.def) explode(tgt);
+    if (tgt.role === 'splitter' && tgt.def && !tgt.wasSplit) splitMob(tgt);
     if (tgt.elite && tgt.elite.onDeath) tgt.elite.onDeath(tgt);
     if (tgt.isDummy) { respawnDummy(tgt); return; }
 
@@ -161,6 +162,35 @@ AA.module('game/combat', (function () {
       w.over = true;
       AA.Game.loop.emitDeath();
     }
+  }
+
+  /** Расщепитель: на месте смерти встают две половинки послабее. */
+  function splitMob(tgt) {
+    var w = W(), m = M(), fx = FX();
+    var n = tgt.def.splitInto || 2;
+
+    for (var i = 0; i < n; i++) {
+      // половинка рождается обычной: элитный модификатор на осколке
+      // превратил бы «половинку послабее» во второго полноценного врага
+      var u = AA.Game.factory.enemy(tgt.def, false, { noElite: true });
+      u.wasSplit = true;              // делиться дальше нельзя
+      u.eliteChild = true;
+      u.r = Math.max(11, tgt.r * .64);
+      u.base.hp *= .38; u.base.atk *= .62; u.base.armor *= .5;
+      u.base.ms *= 1.22;
+      u.gold = Math.round((tgt.gold || 0) * .35);
+      AA.Game.stats.recalc(u);
+      u.hp = u.maxHp;
+
+      var a = i / n * 6.2832 + m.rnd(0, 1);
+      u.x = tgt.x + Math.cos(a) * 34;
+      u.y = tgt.y + Math.sin(a) * 34;
+      AA.Game.world.confine(u);
+      w.units.push(u);
+    }
+
+    fx.ring(tgt.x, tgt.y, 90, '#a8ff5a');
+    fx.burst(tgt.x, tgt.y, '#a8ff5a', 18);
   }
 
   function explode(tgt) {
@@ -271,6 +301,25 @@ AA.module('game/combat', (function () {
       var dealt = damage(u, target, u.stats.atk, u.magic ? 'magic' : 'phys', true);
 
       if (u.role === 'hexer') B().add(target, { id: 'hex', dur: 2, msMul: .6, color: '#ff4ad0' });
+
+      // Жалохвост оставляет яд: сам по себе слаб, но в толпе не даёт стоять
+      if (u.role === 'stinger' && u.def) {
+        // quiet: яд бьёт напрямую из buffs.update и на характеристики
+        // не влияет, пересчитывать их на каждом уколе незачем
+        B().add(target, {
+          id: 'venom', dur: u.def.venomDur, src: u, quiet: true,
+          dps: u.def.venom * AA.Game.run.enemyScale(W().wave), color: '#ffd24a'
+        });
+      }
+
+      // Кровосос жиреет с каждого удара
+      if (u.role === 'leech' && u.def && dealt > 0) {
+        var got = dealt * u.def.drain;
+        u.hp = Math.min(u.maxHp, u.hp + got);
+        FX().floatText(u.x, u.y - u.r - 12, '+' + Math.round(got), '#ff4a6a', 12);
+        FX().bolt(target.x, target.y, u.x, u.y, '#ff4a6a', .16);
+      }
+
       if (u.elite && u.elite.onHit) u.elite.onHit(u, target, dealt);
 
       if (cleaveB) {

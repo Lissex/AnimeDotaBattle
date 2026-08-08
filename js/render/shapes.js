@@ -1348,6 +1348,102 @@ AA.module('render/shapes', (function () {
         ctx.beginPath(); ctx.arc(0, 0, r * 1.25, 0, 6.2832); ctx.stroke();
         ctx.globalAlpha = 1;
         break;
+
+      case 'e_sting':                                   // хвост с жалом
+        ctx.lineWidth = 2.4;
+        ctx.beginPath();
+        ctx.moveTo(-r * .4, 0);
+        ctx.quadraticCurveTo(-r * 1.6, -r * .9, -r * .9, -r * 1.7);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(-r * .9, -r * 1.7);
+        ctx.lineTo(-r * .5, -r * 2.1);
+        ctx.lineTo(-r * 1.2, -r * 2.05);
+        ctx.closePath(); ctx.fill();
+        break;
+
+      case 'e_leech':                                   // присоска и жилы
+        ctx.globalAlpha = .85;
+        ctx.beginPath(); ctx.arc(r * .85, 0, r * .34, 0, 6.2832); ctx.fill();
+        ctx.globalAlpha = .45;
+        ctx.lineWidth = 1.8;
+        for (i = -1; i <= 1; i++) {
+          ctx.beginPath();
+          ctx.moveTo(-r * .5, i * r * .45);
+          ctx.quadraticCurveTo(0, i * r * .2, r * .7, i * r * .16);
+          ctx.stroke();
+        }
+        ctx.globalAlpha = 1;
+        break;
+
+      case 'e_howl':                                    // раскрытая пасть и волны крика
+        ctx.globalAlpha = .9;
+        ctx.beginPath();
+        ctx.moveTo(r * .5, -r * .5); ctx.lineTo(r * 1.15, 0); ctx.lineTo(r * .5, r * .5);
+        ctx.closePath(); ctx.fill();
+        ctx.lineWidth = 2;
+        for (i = 1; i <= 3; i++) {
+          ctx.globalAlpha = .35 - i * .07 + Math.sin(t * 4 + i) * .1;
+          ctx.beginPath();
+          ctx.arc(0, 0, r * (1.2 + i * .32), -.9, .9);
+          ctx.stroke();
+        }
+        ctx.globalAlpha = 1;
+        break;
+
+      case 'e_lunge':                                   // поджатые лапы для прыжка
+        ctx.lineWidth = 2.6;
+        for (i = -1; i <= 1; i += 2) {
+          ctx.beginPath();
+          ctx.moveTo(-r * .2, i * r * .55);
+          ctx.lineTo(-r * .95, i * r * 1.0);
+          ctx.lineTo(-r * .35, i * r * 1.35);
+          ctx.stroke();
+        }
+        ctx.globalAlpha = .8;
+        ctx.beginPath(); ctx.arc(0, 0, r * .3, 0, 6.2832); ctx.fill();
+        ctx.globalAlpha = 1;
+        break;
+
+      case 'e_split':                                   // трещина по корпусу
+        ctx.lineWidth = 2.8;
+        ctx.globalAlpha = .9;
+        ctx.beginPath();
+        ctx.moveTo(0, -r * 1.05);
+        ctx.lineTo(r * .22, -r * .3);
+        ctx.lineTo(-r * .22, r * .3);
+        ctx.lineTo(0, r * 1.05);
+        ctx.stroke();
+        ctx.globalAlpha = 1;
+        break;
+
+      case 'e_sentinel':                                // тяжёлые пластины и шлем
+        ctx.globalAlpha = .55;
+        ctx.lineWidth = 4;
+        ctx.beginPath(); ctx.arc(0, 0, r * 1.1, -1.5, 1.5); ctx.stroke();
+        ctx.beginPath(); ctx.arc(0, 0, r * .82, -1.3, 1.3); ctx.stroke();
+        ctx.globalAlpha = 1;
+        ctx.beginPath();
+        ctx.moveTo(r * .3, -r * 1.3); ctx.lineTo(r * .55, -r * .85);
+        ctx.lineTo(r * .05, -r * .95);
+        ctx.closePath(); ctx.fill();
+        break;
+
+      case 'e_warlock':                                 // книга и знак на груди
+        ctx.globalAlpha = .9;
+        ctx.beginPath();
+        ctx.moveTo(r * .7, -r * .55); ctx.lineTo(r * 1.5, -r * .35);
+        ctx.lineTo(r * 1.5, r * .35); ctx.lineTo(r * .7, r * .55);
+        ctx.closePath(); ctx.fill();
+        ctx.globalAlpha = .5 + Math.sin(t * 3) * .2;
+        ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.arc(0, 0, r * .55, 0, 6.2832); ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(-r * .4, -r * .3); ctx.lineTo(r * .4, r * .3);
+        ctx.moveTo(-r * .4, r * .3); ctx.lineTo(r * .4, -r * .3);
+        ctx.stroke();
+        ctx.globalAlpha = 1;
+        break;
     }
   }
 

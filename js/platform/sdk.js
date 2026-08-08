@@ -1,11 +1,14 @@
 /* platform/sdk — единственное место, где игра знает про Яндекс Игры.
-   Всё остальное обращается сюда. Если SDK не загрузился (локальный
-   запуск), включается режим отладки: бесконечная валюта, всё открыто. */
+   Всё остальное обращается сюда.
+
+   Если SDK не загрузился (запуск с диска), игра продолжает работать
+   на локальном сейве: правила ровно те же, что на Яндексе, просто
+   нет рекламы, облака и таблицы рекордов. Поблажек нигде нет. */
 AA.module('platform/sdk', (function () {
   'use strict';
 
   var ysdk = null, player = null;
-  var ready = false, devMode = false;
+  var ready = false;
   var lastInterstitial = 0;
   var INTERSTITIAL_GAP = 65000;   // Яндекс требует >60 сек между полноэкранными
 
@@ -68,8 +71,8 @@ AA.module('platform/sdk', (function () {
         return store().data;
       })
       .catch(function () {
-        // SDK недоступен → локальная отладка. На Яндексе сюда не попадаем.
-        devMode = true;
+        // SDK недоступен (запуск с диска) — играем на локальном сейве.
+        // Никаких послаблений: правила те же, что на Яндексе.
         ready = true;
         onProgress(100, 'Готово');
         return store().data;
@@ -127,7 +130,6 @@ AA.module('platform/sdk', (function () {
     showBanner: showBanner, hideBanner: hideBanner,
     gameReady: gameReady, gameplayStart: gameplayStart, gameplayStop: gameplayStop,
     hasAds: function () { return !!(ysdk && ysdk.adv); },
-    isDev: function () { return devMode; },
     isReady: function () { return ready; }
   };
 })());

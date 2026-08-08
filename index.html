@@ -30,7 +30,6 @@
     <div class="menu-bg"></div>
     <div class="topbar">
       <div class="cur"><span class="ic ic-soul"></span><b id="hud-souls">0</b></div>
-      <div id="dev-badge" class="dev-badge" style="display:none">ОТЛАДКА</div>
       <button class="icon-btn" id="btn-settings" aria-label="Настройки"><span class="ic ic-gear"></span></button>
     </div>
     <div class="menu-core">
@@ -241,12 +240,9 @@
         <label class="switch"><input type="checkbox" id="set-shake" checked><span></span>Тряска экрана</label>
         <label class="switch"><input type="checkbox" id="set-numbers" checked><span></span>Числа урона</label>
 
-        <div class="set-sep" id="set-mode-row">
-          <label class="switch"><input type="checkbox" id="set-game-mode"><span></span>Игровой режим</label>
-          <p class="set-hint" id="set-mode-hint"></p>
+        <div class="set-sep">
+          <button class="btn btn-ghost btn-reset" id="btn-reset">СБРОСИТЬ ПРОГРЕСС</button>
         </div>
-
-        <button class="btn btn-ghost btn-reset" id="btn-reset">СБРОСИТЬ ПРОГРЕСС</button>
       </div>
       <div class="panel-foot">
         <button class="btn btn-main" id="btn-settings-close">ГОТОВО</button>

@@ -40,7 +40,7 @@ AA.module('game/waves', (function () {
       var count = 1 + Math.floor(A.bossIndex(wave) / 5);   // с 50-й волны их двое
       for (var i = 0; i < count; i++) spawn(bossDef, true);
 
-      var escort = Math.min(6, 2 + Math.floor(wave / 10));
+      var escort = Math.min(14, 3 + Math.floor(wave / 5));
       for (var k = 0; k < escort; k++) spawn(E.roll(wave), false);
 
       AA.Game.effects.flash('#ff4d5e', .3);
@@ -50,7 +50,7 @@ AA.module('game/waves', (function () {
     } else {
       /* --- обычная волна --- */
       var budget = AA.Game.run.waveSize(wave), guard = 0;
-      while (budget > 0 && guard++ < 20) {
+      while (budget > 0 && guard++ < 40) {
         var def = E.roll(wave), pack = def.pack || 1;
         for (var p = 0; p < pack; p++) {
           var u = spawn(def, false);
@@ -59,7 +59,9 @@ AA.module('game/waves', (function () {
             AA.Game.world.confine(u);
           }
         }
-        budget -= (pack > 1 ? 2 : 1);   // рой занимает два «слота» волны
+        // рой стоит столько, сколько в нём тварей: иначе на поздних
+        // волнах вместо 28 врагов появлялось под шестьдесят
+        budget -= pack;
       }
       // напряжение копится к следующему боссу
       AA.Core.audio.setTension((wave % A.BOSS_EVERY) / A.BOSS_EVERY * .8);

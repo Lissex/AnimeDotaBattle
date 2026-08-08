@@ -52,18 +52,23 @@ AA.module('content/elites', (function () {
     },
 
     {
-      id: 'splitter', name: 'Делящийся', color: '#d0ff4a', weight: 8,
+      /* Имя модификатора намеренно не совпадает с мобом «Расщепитель»:
+         иначе элитный Расщепитель делился бы дважды — и от роли, и от
+         модификатора, а его осколки продолжали бы делиться дальше. */
+      id: 'fracture', name: 'Делящийся', color: '#d0ff4a', weight: 8,
       d: 'при смерти распадается надвое',
       stats: function (u) { u.base.hp *= 1.15; },
       onDeath: function (u) {
-        if (u.eliteChild) return;        // осколки дальше не делятся
+        if (u.eliteChild || u.wasSplit) return;   // осколки дальше не делятся
         var m = AA.Core.math;
         for (var i = -1; i <= 1; i += 2) {
-          var child = AA.Game.factory.enemy(u.def, false);
+          var child = AA.Game.factory.enemy(u.def, false, { noElite: true });
           child.x = u.x + i * 34; child.y = u.y + m.rnd(-18, 18);
           child.base.hp *= .45; child.base.atk *= .7;
           child.r = Math.round(child.r * .8);
+          // обе метки сразу: осколок не делится ни как элита, ни как моб
           child.eliteChild = true;
+          child.wasSplit = true;
           child.gold = Math.round(child.gold * .4);
           AA.Game.stats.recalc(child);
           child.hp = child.maxHp;
@@ -154,9 +159,11 @@ AA.module('content/elites', (function () {
   var byId = {};
   LIST.forEach(function (e) { byId[e.id] = e; });
 
-  /** Базовый шанс элиты по номеру волны — растёт, но упирается в потолок. */
+  /** Базовый шанс элиты по номеру волны — растёт, но упирается в потолок.
+      Потолок берётся к 50-й волне: к этому моменту каждый третий враг
+      с меткой, и толпа перестаёт быть просто мясом. */
   function chanceFor(wave) {
-    return Math.min(.18, .02 + wave * .004);
+    return Math.min(.32, .02 + wave * .006);
   }
 
   function roll() {

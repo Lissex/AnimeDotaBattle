@@ -1,7 +1,5 @@
-/* ui/settings — настройки игры.
-   Здесь же переключение между режимом отладки и честной игрой:
-   отладка включается сама, когда SDK не загрузился, но её можно
-   выключить и играть по нормальным правилам локально. */
+/* ui/settings — настройки игры: звук, музыка, тряска, числа урона
+   и сброс прогресса. */
 AA.module('ui/settings', (function () {
   'use strict';
 
@@ -20,14 +18,6 @@ AA.module('ui/settings', (function () {
     d.$('set-music').checked = s.music !== false;
     d.$('set-shake').checked = s.shake !== false;
     d.$('set-numbers').checked = s.numbers !== false;
-
-    var sdkMissing = AA.Platform.sdk.isDev();
-    var row = d.$('set-mode-row');
-    row.style.display = sdkMissing ? '' : 'none';
-    d.$('set-game-mode').checked = !!s.forceGame;
-    d.$('set-mode-hint').textContent = s.forceGame
-      ? 'Честный режим: души и золото копятся как на Яндексе.'
-      : 'Отладка: всё открыто, валюта бесконечна.';
   }
 
   function bind() {
@@ -54,15 +44,6 @@ AA.module('ui/settings', (function () {
     d.$('set-numbers').onchange = function () {
       save().numbers = this.checked;
       AA.Platform.storage.commit();
-    };
-
-    // главный тумблер: отладка ↔ честная игра
-    d.$('set-game-mode').onchange = function () {
-      save().forceGame = this.checked;
-      AA.Platform.storage.commit(true);
-      sync();
-      AA.UI.menu.refresh();
-      AA.UI.toast.show(this.checked ? 'Игровой режим' : 'Режим отладки');
     };
 
     d.$('btn-settings-close').onclick = function () { AA.UI.screens.close('settings'); };

@@ -9,7 +9,6 @@ AA.module('ui/menu', (function () {
     d.$('hud-souls').textContent = d.soulsText();
     d.$$('.hud-souls').forEach(function (e) { e.textContent = d.soulsText(); });
     d.$('hud-best').textContent = d.t('волна ') + save.best;
-    d.$('dev-badge').style.display = d.isDev() ? '' : 'none';
   }
 
   function fillHowto() {

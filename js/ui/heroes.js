@@ -122,7 +122,7 @@ AA.module('ui/heroes', (function () {
 
     S.listFor(hero.id).forEach(function (skin) {
       var key = S.key(hero.id, skin.id);
-      var owned = skin.tier === 0 || d.isDev() || save.ownedSkins.indexOf(key) >= 0;
+      var owned = skin.tier === 0 || save.ownedSkins.indexOf(key) >= 0;
 
       var card = d.el('div',
         'skin-card skin-t' + skin.tier +

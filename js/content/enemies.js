@@ -6,60 +6,125 @@ AA.module('content/enemies', (function () {
 
   // from   — с какой волны появляется
   // weight — вес в случайном выборе
-  // role   — особое поведение (game/ai)
+  // fade   — с какой волны вес начинает падать (ранние типы уступают
+  //          место поздним, иначе на сороковой волне то же Порождение)
+  // role   — особое поведение (game/ai, game/combat)
   var LIST = [
     {
       id: 'grunt', name: 'Порождение', shape: 'e_husk',
       c1: '#6a3a3a', c2: '#2a1010', glow: '#ff5a4a',
-      hp: 215, atk: 24, armor: 1, ms: 200, as: .8, range: 62, r: 18, from: 1, weight: 10
+      hp: 215, atk: 24, armor: 1, ms: 200, as: .8, range: 62, r: 18,
+      from: 1, weight: 10, fade: 8
     },
     {
       id: 'archer', name: 'Костеплюй', shape: 'e_spitter',
       c1: '#3a5a6a', c2: '#101e28', glow: '#4affd0',
-      hp: 160, atk: 27, armor: 0, ms: 190, as: .75, range: 360, r: 17, from: 1, weight: 8
+      hp: 160, atk: 27, armor: 0, ms: 190, as: .75, range: 360, r: 17,
+      from: 1, weight: 8, fade: 10
     },
     {
       id: 'stalker', name: 'Тенегон', shape: 'e_stalker',
       c1: '#2a5a48', c2: '#0c1e18', glow: '#4aff9a',
-      hp: 200, atk: 30, armor: 1, ms: 305, as: 1.1, range: 60, r: 16, from: 3, weight: 7
+      hp: 200, atk: 30, armor: 1, ms: 305, as: 1.1, range: 60, r: 16,
+      from: 3, weight: 7, fade: 16
     },
     {
       id: 'brute', name: 'Костолом', shape: 'e_brute',
       c1: '#5a4a2a', c2: '#221a0c', glow: '#ffb03a',
-      hp: 450, atk: 38, armor: 4, ms: 175, as: .6, range: 72, r: 24, from: 4, weight: 6
+      hp: 450, atk: 38, armor: 4, ms: 175, as: .6, range: 72, r: 24,
+      from: 4, weight: 6, fade: 22
     },
     {
       id: 'shaman', name: 'Скверноус', shape: 'e_caster',
       c1: '#4a2a6a', c2: '#1a0c28', glow: '#c04aff',
-      hp: 180, atk: 36, armor: 0, ms: 195, as: .62, range: 330, r: 17, from: 5, weight: 6, magic: true
+      hp: 180, atk: 36, armor: 0, ms: 195, as: .62, range: 330, r: 17,
+      from: 5, weight: 6, fade: 20, magic: true
     },
     {
       id: 'bomber', name: 'Гнойник', shape: 'e_bomb',
       c1: '#7a6a1a', c2: '#2a2408', glow: '#ffe04a',
-      hp: 150, atk: 10, armor: 0, ms: 330, as: .5, range: 40, r: 17, from: 6, weight: 5,
+      hp: 150, atk: 10, armor: 0, ms: 330, as: .5, range: 40, r: 17,
+      from: 6, weight: 5,
       role: 'bomber', boomDmg: 130, boomR: 155
+    },
+    {
+      /* Жалохвост: сам по себе хлипкий, но каждый удар оставляет яд.
+         В толпе именно он не даёт спокойно стоять. */
+      id: 'stinger', name: 'Жалохвост', shape: 'e_sting',
+      c1: '#7a5a1a', c2: '#2a1e06', glow: '#ffd24a',
+      hp: 165, atk: 20, armor: 0, ms: 300, as: 1.2, range: 56, r: 15,
+      from: 6, weight: 6, role: 'stinger', venom: 6, venomDur: 4
     },
     {
       id: 'healer', name: 'Гнилодух', shape: 'e_healer',
       c1: '#2a6a4a', c2: '#0c2418', glow: '#5affb0',
-      hp: 190, atk: 18, armor: 0, ms: 210, as: .6, range: 300, r: 17, from: 7, weight: 4,
+      hp: 190, atk: 18, armor: 0, ms: 210, as: .6, range: 300, r: 17,
+      from: 7, weight: 4,
       role: 'healer', healPs: 26, healR: 280
     },
     {
       id: 'shieldman', name: 'Панцирник', shape: 'e_shell',
       c1: '#3a4a5a', c2: '#141c24', glow: '#7ab0ff',
-      hp: 380, atk: 30, armor: 12, ms: 160, as: .55, range: 66, r: 22, from: 8, weight: 5
+      hp: 380, atk: 30, armor: 12, ms: 160, as: .55, range: 66, r: 22,
+      from: 8, weight: 5, fade: 26
     },
     {
       id: 'swarm', name: 'Гнус', shape: 'e_swarm',
       c1: '#6a7a1a', c2: '#242a08', glow: '#d0ff4a',
-      hp: 70, atk: 14, armor: 0, ms: 360, as: 1.5, range: 44, r: 11, from: 9, weight: 6, pack: 4
+      hp: 70, atk: 14, armor: 0, ms: 360, as: 1.5, range: 44, r: 11,
+      from: 9, weight: 6, pack: 4
+    },
+    {
+      /* Кровосос: чем дольше живёт, тем толще. Его надо убивать первым. */
+      id: 'leech', name: 'Кровосос', shape: 'e_leech',
+      c1: '#6a1a2a', c2: '#260810', glow: '#ff4a6a',
+      hp: 260, atk: 30, armor: 2, ms: 245, as: .9, range: 60, r: 18,
+      from: 10, weight: 6, role: 'leech', drain: .9
     },
     {
       id: 'hexer', name: 'Проклятая', shape: 'e_hex',
       c1: '#6a1a5a', c2: '#260820', glow: '#ff4ad0',
-      hp: 200, atk: 32, armor: 1, ms: 200, as: .55, range: 380, r: 18, from: 11, weight: 5,
+      hp: 200, atk: 32, armor: 1, ms: 200, as: .55, range: 380, r: 18,
+      from: 11, weight: 5,
       magic: true, role: 'hexer'
+    },
+    {
+      /* Ревун: сам почти не бьёт, но разгоняет всех вокруг.
+         Живой аргумент за то, чтобы бить не ближайшего, а нужного. */
+      id: 'howler', name: 'Ревун', shape: 'e_howl',
+      c1: '#5a3a6a', c2: '#1c0e28', glow: '#c88aff',
+      hp: 300, atk: 20, armor: 3, ms: 215, as: .5, range: 70, r: 21,
+      from: 13, weight: 5,
+      role: 'howler', auraR: 340, auraAs: 1.35, auraMs: 1.18
+    },
+    {
+      /* Прыгун: раз в несколько секунд перелетает через полкарты
+         прямо к герою. Дистанция от него не спасает. */
+      id: 'lunger', name: 'Прыгун', shape: 'e_lunge',
+      c1: '#2a4a6a', c2: '#0c1826', glow: '#5ac8ff',
+      hp: 240, atk: 34, armor: 1, ms: 260, as: .85, range: 62, r: 18,
+      from: 15, weight: 6, role: 'lunger', leapCd: 6, leapRange: 620
+    },
+    {
+      /* Расщепитель: убил одного — получил двух поменьше. */
+      id: 'splitter', name: 'Расщепитель', shape: 'e_split',
+      c1: '#4a6a3a', c2: '#16220e', glow: '#a8ff5a',
+      hp: 340, atk: 28, armor: 2, ms: 205, as: .7, range: 64, r: 22,
+      from: 17, weight: 6, role: 'splitter', splitInto: 2
+    },
+    {
+      /* Костяной Страж: ходячая стена. Броню надо снимать, иначе не пробить. */
+      id: 'sentinel', name: 'Костяной Страж', shape: 'e_sentinel',
+      c1: '#8a8270', c2: '#2a2620', glow: '#ffe8a0',
+      hp: 720, atk: 44, armor: 20, ms: 150, as: .5, range: 78, r: 27,
+      from: 20, weight: 5
+    },
+    {
+      /* Чернокнижник: щитует соседей, поэтому урон уходит в пустоту. */
+      id: 'warlock', name: 'Чернокнижник', shape: 'e_warlock',
+      c1: '#3a2a7a', c2: '#100a2a', glow: '#8a7aff',
+      hp: 230, atk: 40, armor: 1, ms: 200, as: .55, range: 400, r: 18,
+      from: 23, weight: 5, magic: true, role: 'warlock', shieldR: 320, shieldCd: 7
     }
   ];
 
@@ -217,13 +282,19 @@ AA.module('content/enemies', (function () {
     hp: 12000, atk: 0, armor: 0, ms: 0, as: 0, range: 0, r: 22, role: 'dummy'
   };
 
+  /** Вес типа на конкретной волне: ранние постепенно вытесняются. */
+  function weightAt(e, wave) {
+    if (!e.fade || wave <= e.fade) return e.weight;
+    return e.weight * Math.max(.12, 1 - (wave - e.fade) * .045);
+  }
+
   /** Взвешенный выбор моба по номеру волны. */
   function roll(wave) {
     var pool = LIST.filter(function (e) { return wave >= e.from; });
-    var total = 0, i;
-    for (i = 0; i < pool.length; i++) total += pool[i].weight;
+    var total = 0, i, w = [];
+    for (i = 0; i < pool.length; i++) { w[i] = weightAt(pool[i], wave); total += w[i]; }
     var r = Math.random() * total;
-    for (i = 0; i < pool.length; i++) { r -= pool[i].weight; if (r <= 0) return pool[i]; }
+    for (i = 0; i < pool.length; i++) { r -= w[i]; if (r <= 0) return pool[i]; }
     return pool[0] || LIST[0];
   }
 
@@ -236,6 +307,10 @@ AA.module('content/enemies', (function () {
 
   return {
     LIST: LIST, BOSSES: BOSSES, MINIONS: MINIONS, DUMMY: DUMMY,
-    roll: roll, bossFor: bossFor
+    roll: roll, bossFor: bossFor, weightAt: weightAt,
+    get: function (id) {
+      for (var i = 0; i < LIST.length; i++) if (LIST[i].id === id) return LIST[i];
+      return null;
+    }
   };
 })());

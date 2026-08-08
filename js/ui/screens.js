@@ -61,7 +61,6 @@ AA.module('ui/screens', (function () {
     show('battle');
     AA.Render.canvas.resize();
     AA.Game.loop.startRun(hero, training);
-    if (d.isDev() && !training) W().gold = 999999;
 
     AA.Platform.sdk.gameplayStart();
     AA.Platform.sdk.hideBanner();

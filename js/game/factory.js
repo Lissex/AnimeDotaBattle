@@ -31,7 +31,13 @@ AA.module('game/factory', (function () {
     return u;
   }
 
-  function enemy(def, isBoss) {
+  /**
+   * @param {object} def          описание врага из content/enemies
+   * @param {boolean} isBoss
+   * @param {object} [opts]       noElite: true — не навешивать элитный модификатор
+   *                              (осколки делящихся врагов рождаются обычными)
+   */
+  function enemy(def, isBoss, opts) {
     var w = W(), m = M();
     var scale = AA.Game.run.enemyScale(w.wave);
     var u = {
@@ -65,7 +71,7 @@ AA.module('game/factory', (function () {
       gold: Math.round((isBoss ? 300 : 44) * (1 + w.wave * .16))
     };
 
-    if (!isBoss) maybeElite(u);
+    if (!isBoss && !(opts && opts.noElite)) maybeElite(u);
 
     AA.Game.stats.recalc(u);
     u.hp = u.maxHp;

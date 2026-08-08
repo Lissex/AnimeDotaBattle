@@ -178,6 +178,11 @@ AA.module('game/ai', (function () {
 
     if (u.role === 'healer') { healerLogic(u, dt, target); return; }
 
+    // поддержка работает фоном и не мешает обычному движению
+    if (u.role === 'howler') howlerAura(u, dt);
+    if (u.role === 'warlock') warlockShield(u, dt);
+    if (u.role === 'lunger' && lungerLeap(u, dt, target)) return;
+
     var d = m.dist(u, target), a = m.angleTo(u, target);
     u.face = a;
     var want = u.role === 'bomber' ? 0 : u.stats.range * .82;
@@ -185,6 +190,73 @@ AA.module('game/ai', (function () {
     else { u.vx *= .82; u.vy *= .82; }
 
     if (u.role === 'bomber' && d < u.r + target.r + 14) AA.Game.combat.kill(null, u);
+  }
+
+  /* ---------------- поведение новых видов ---------------- */
+
+  /** Ревун: разгоняет всех своих вокруг. Пока жив — толпа быстрее. */
+  function howlerAura(u, dt) {
+    var w = W(), m = M(), def = u.def;
+    var r = def.auraR;
+
+    // на арене бывает под сорок юнитов, а ревунов сразу несколько —
+    // обходим список четыре раза в секунду, а не каждый кадр
+    u.auraT = (u.auraT || 0) - dt;
+    if (u.auraT > 0) return;
+    u.auraT = .25;
+
+    for (var i = 0; i < w.units.length; i++) {
+      var e = w.units[i];
+      if (e.dead || e.team !== u.team || e === u) continue;
+      if (m.d2(e.x, e.y, u.x, u.y) > r * r) continue;
+      AA.Game.buffs.add(e, {
+        id: 'howl', dur: .45, asMul: def.auraAs, msMul: def.auraMs,
+        quiet: true, color: '#c88aff'
+      });
+    }
+
+    u.howlT = (u.howlT || 0) + dt;
+    if (u.howlT > .8) { u.howlT = 0; FX().aura(u, r, 'rgba(200,138,255,.09)'); }
+  }
+
+  /** Чернокнижник: раз в несколько секунд накрывает соседей щитом. */
+  function warlockShield(u, dt) {
+    var w = W(), m = M(), def = u.def;
+    u.shieldT = (u.shieldT || m.rnd(0, 3)) - dt;
+    if (u.shieldT > 0) return;
+    u.shieldT = def.shieldCd;
+
+    var amount = 60 * AA.Game.run.enemyScale(w.wave);
+    var n = 0;
+    for (var i = 0; i < w.units.length && n < 5; i++) {
+      var e = w.units[i];
+      if (e.dead || e.team !== u.team) continue;
+      if (m.d2(e.x, e.y, u.x, u.y) > def.shieldR * def.shieldR) continue;
+      AA.Game.buffs.add(e, { id: 'shield', dur: 8, shield: amount, color: '#8a7aff' });
+      FX().bolt(u.x, u.y, e.x, e.y, '#8a7aff', .25);
+      n++;
+    }
+    if (n) FX().ring(u.x, u.y, def.shieldR, '#8a7aff');
+  }
+
+  /** Прыгун: перелетает к герою, дистанция от него не спасает. */
+  function lungerLeap(u, dt, target) {
+    var m = M(), def = u.def;
+    u.leapT = (u.leapT || m.rnd(1, 4)) - dt;
+    if (u.leapT > 0 || u.leap) return false;
+
+    var d = m.dist(u, target);
+    if (d < 180 || d > def.leapRange) return false;
+
+    u.leapT = def.leapCd;
+    FX().telegraph(target.x, target.y, 70, '#5ac8ff', .35, function () {
+      if (u.dead || target.dead) return;
+      AA.Game.combat.leapTo(u, target.x, target.y, .32, function () {
+        FX().ring(u.x, u.y, 110, '#5ac8ff');
+        FX().sparks(u.x, u.y, '#5ac8ff', 10);
+      });
+    });
+    return true;
   }
 
   /** Герой пропал из виду (невидимость) — враг бродит. */

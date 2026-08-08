@@ -51,9 +51,14 @@ AA.module('game/run', (function () {
     if (modifier && modifier.apply) modifier.apply(state);
   }
 
-  /** Добавить благословение из события. */
+  /**
+   * Добавить благословение из события.
+   * Запоминаем волну, на которой карта взята: дары атрибутов растут
+   * вместе с ней, иначе взятое на четвёртой волне к сороковой
+   * превращается в ничто, а игрок этого не понимает.
+   */
   function addBlessing(offer) {
-    state.blessings.push(offer);
+    state.blessings.push({ def: offer, wave: AA.Game.world.state.wave || 1 });
     if (offer.run) offer.run(state);
   }
 
@@ -61,7 +66,7 @@ AA.module('game/run', (function () {
   function applyStats(u, s) {
     for (var i = 0; i < state.blessings.length; i++) {
       var b = state.blessings[i];
-      if (b.stat) b.stat(u, s);
+      if (b.def.stat) b.def.stat(u, s, b.wave);
     }
   }
 
@@ -69,7 +74,7 @@ AA.module('game/run', (function () {
   function countOf(id) {
     var n = 0;
     for (var i = 0; i < state.blessings.length; i++) {
-      if (state.blessings[i].id === id) n++;
+      if (state.blessings[i].def.id === id) n++;
     }
     return n;
   }
@@ -109,8 +114,8 @@ AA.module('game/run', (function () {
     if (state.modifier) out.push(state.modifier.name);
     var seen = {};
     for (var i = 0; i < state.blessings.length; i++) {
-      var b = state.blessings[i];
-      seen[b.name] = (seen[b.name] || 0) + 1;
+      var name = state.blessings[i].def.name;
+      seen[name] = (seen[name] || 0) + 1;
     }
     for (var name in seen) {
       out.push(seen[name] > 1 ? name + ' ×' + seen[name] : name);
